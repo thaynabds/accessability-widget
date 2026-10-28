@@ -4,7 +4,7 @@ Widget de acessibilidade universal para web. Adicione ao seu site com **uma linh
 
 [![jsDelivr CDN](https://img.shields.io/badge/CDN-jsDelivr-orange)](https://www.jsdelivr.com/package/gh/thaynabds/a11y-widget)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
-[![Demo](https://img.shields.io/badge/demo-GitHub%20Pages-brightgreen)](https://thaynabds.github.io/a11y-widget/)
+[![Demo](https://img.shields.io/badge/demo-GitHub%20Pages-brightgreen)](https://thaynabds.github.io/a11y-widget/demo/)
 [![WCAG 2.2](https://img.shields.io/badge/WCAG-2.2%20AA-green)](https://www.w3.org/WAI/WCAG22/quickref/)
 [![LBI](https://img.shields.io/badge/LBI-13.146%2F2015-blue)](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13146.htm)
 
@@ -12,7 +12,7 @@ Widget de acessibilidade universal para web. Adicione ao seu site com **uma linh
 
 ## Demo ao vivo
 
-**[thaynabds.github.io/a11y-widget](https://thaynabds.github.io/a11y-widget/)**
+**[thaynabds.github.io/a11y-widget/demo](https://thaynabds.github.io/a11y-widget/demo/)**
 
 ---
 
@@ -24,7 +24,7 @@ Cole antes do `</body>`:
 <script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@latest/src/a11y-widget.js"></script>
 ```
 
-O botão aparece no canto inferior direito. Atalho de teclado: `Alt+A`.
+O botão aparece no canto inferior direito e pode ser arrastado para outra posição (a posição é lembrada). Atalho de teclado: `Alt+A`.
 
 ---
 
@@ -32,7 +32,7 @@ O botão aparece no canto inferior direito. Atalho de teclado: `Alt+A`.
 
 | # | Recurso | Implementação técnica | Beneficiários |
 |---|---|---|---|
-| 1 | 🌙 Modo escuro | `filter: invert(1) hue-rotate(180deg)` com exceção para `img/video` | Fotofobia, fadiga ocular |
+| 1 | 🌙 Modo escuro | `filter: invert(1) hue-rotate(180deg)` com exceção para `img/video` (combinável com os demais filtros) | Fotofobia, fadiga ocular |
 | 2 | 🔄 Inverter cores | `filter: invert(1)` puro | Alto contraste básico |
 | 3 | 🔆 Alto contraste | `filter: contrast(2.4)` | Baixa visão |
 | 4 | 🌈 Aumentar saturação | `filter: saturate(3) contrast(1.1)` | Baixa acuidade de cores |
@@ -91,7 +91,15 @@ A pasta `api/` contém uma API REST em **Spring Boot 3.3** com **Spring Security
 
 Stack: Java 21, Spring Boot 3.3, Spring Data JPA, H2, JJWT 0.12.6, BCrypt, OpenAPI/Swagger.
 
-Deploy gratuito: [Render](https://render.com) (free tier, sem cartão de crédito).
+Rodar localmente:
+
+```bash
+cd api && ./mvnw spring-boot:run
+```
+
+Swagger em `http://localhost:8080/swagger-ui.html`. Testes: `./mvnw test`.
+
+Deploy gratuito: [Render](https://render.com) via Blueprint — o arquivo `render.yaml` na raiz constrói o `api/Dockerfile`. Defina `JWT_SECRET` (gerado automaticamente pelo Blueprint) e `CORS_ORIGINS`.
 
 Endpoints:
 - `POST /api/auth/register` — cadastro
@@ -103,9 +111,9 @@ Endpoints:
 
 ## Deploy gratuito (widget)
 
-1. Crie o repo `a11y-widget` público no GitHub.
+1. Repositório público: [`thaynabds/a11y-widget`](https://github.com/thaynabds/a11y-widget).
 2. Settings > Pages > Source: **GitHub Actions**.
-3. Push na `main` — o workflow `.github/workflows/pages.yml` publica a demo automaticamente.
+3. Push na `main` — o workflow `.github/workflows/pages.yml` publica a demo em `https://thaynabds.github.io/a11y-widget/demo/` (a raiz redireciona para ela).
 4. jsDelivr serve o script em: `cdn.jsdelivr.net/gh/thaynabds/a11y-widget@latest/src/a11y-widget.js`
 
 ---

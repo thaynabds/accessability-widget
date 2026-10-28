@@ -1,0 +1,14 @@
+# Blueprint do Render para a API do a11y-widget (api/).
+services:
+  - type: web
+    name: a11y-widget-api
+    runtime: docker
+    plan: free
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /v3/api-docs
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "https://thaynabds.github.io"

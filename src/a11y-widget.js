@@ -105,7 +105,7 @@
     #a11y-panel {
       position: fixed; bottom: 90px; right: 24px;
       z-index: var(--aw-z);
-      width: var(--aw-panel-w);
+      width: var(--aw-panel-w); max-width: calc(100vw - 16px);
       background: var(--aw-bg); color: var(--aw-text);
       border: 1.5px solid var(--aw-border);
       border-radius: var(--aw-radius);
@@ -236,8 +236,10 @@
        EFEITOS APLICADOS NA PÁGINA
     ═══════════════════════════════════════════ */
 
-    /* Dark mode — inverte mas preserva imagens/vídeos */
-    body.aw-dark-mode { filter: invert(1) hue-rotate(180deg) !important; }
+    /* Filtros de cor do body (modo escuro, inversão, contraste, saturação,
+       daltonismo) são combinados em applyFilters(), para poderem coexistir. */
+
+    /* Dark mode — preserva imagens/vídeos */
     body.aw-dark-mode img,
     body.aw-dark-mode video,
     body.aw-dark-mode iframe,
@@ -246,17 +248,13 @@
       filter: invert(1) hue-rotate(180deg) !important;
     }
 
-    /* Inversão de cores pura */
-    body.aw-invert { filter: invert(1) !important; }
+    /* Inversão de cores pura — preserva imagens/vídeos */
     body.aw-invert img,
     body.aw-invert video,
     body.aw-invert iframe { filter: invert(1) !important; }
-
-    /* Alto contraste */
-    body.aw-high-contrast { filter: contrast(2.4) !important; }
-
-    /* Aumento de saturação (baixa visão) */
-    body.aw-saturation { filter: saturate(3) contrast(1.1) !important; }
+    body.aw-dark-mode.aw-invert img,
+    body.aw-dark-mode.aw-invert video,
+    body.aw-dark-mode.aw-invert iframe { filter: hue-rotate(180deg) !important; }
 
     /* Fonte dislexia */
     body.aw-dyslexic *,
@@ -286,12 +284,14 @@
 
     /* Cursor grande */
     body.aw-big-cursor,
-    body.aw-big-cursor * {
+    body.aw-big-cursor *,
+    #a11y-widget-root.aw-big-cursor * {
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cpath d='M8 4l20 14-9 2-5 10z' fill='%23000' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E") 6 4, auto !important;
     }
 
     /* Foco sempre visível */
-    body.aw-focus-visible *:focus {
+    body.aw-focus-visible *:focus,
+    #a11y-widget-root.aw-focus-visible *:focus {
       outline: 3px solid #ffcc00 !important;
       outline-offset: 3px !important;
       border-radius: 3px !important;
@@ -328,10 +328,6 @@
 
     /* Filtros de daltonismo (SVG) */
     .aw-svg-filter { position: absolute; width: 0; height: 0; overflow: hidden; }
-    body.aw-cb-protanopia   { filter: url('#aw-f-protanopia') !important; }
-    body.aw-cb-deuteranopia { filter: url('#aw-f-deuteranopia') !important; }
-    body.aw-cb-tritanopia   { filter: url('#aw-f-tritanopia') !important; }
-    body.aw-cb-monochromia  { filter: grayscale(1) !important; }
 
     /* Guia de leitura */
     #a11y-reading-guide {
@@ -421,7 +417,7 @@
 
           <!-- DALTONISMO -->
           <div class="aw-section-label">Daltonismo</div>
-          <div class="aw-chips" id="aw-chips-cb" role="group" aria-label="Filtro de daltonismo">
+          <div class="aw-chips" id="aw-chips-cb" role="radiogroup" aria-label="Filtro de daltonismo">
             <span class="aw-chip" role="radio" tabindex="0" data-cb="none">Normal</span>
             <span class="aw-chip" role="radio" tabindex="0" data-cb="protanopia">Protanopia</span>
             <span class="aw-chip" role="radio" tabindex="0" data-cb="deuteranopia">Deuteranopia</span>
@@ -535,21 +531,36 @@
     Object.entries(CLASS_MAP).forEach(([key, cls]) =>
       b.classList.toggle(cls, !!prefs[key])
     );
-    applyColorBlind();
+    // O widget fica fora do body; cursor e foco também valem dentro do painel
+    const root = document.getElementById(WIDGET_ID);
+    if (root) {
+      root.classList.toggle('aw-big-cursor', !!prefs.bigCursor);
+      root.classList.toggle('aw-focus-visible', !!prefs.focusVisible);
+    }
+    applyFilters();
     applyFontSize();
     applyVideos();
     applyReadingGuide();
   }
 
-  function applyColorBlind() {
-    const CB_CLASSES = [
-      'aw-cb-protanopia','aw-cb-deuteranopia',
-      'aw-cb-tritanopia','aw-cb-monochromia',
-    ];
-    CB_CLASSES.forEach(c => document.body.classList.remove(c));
-    if (prefs.colorBlind !== 'none') {
-      document.body.classList.add('aw-cb-' + prefs.colorBlind);
-    }
+  const CB_FILTERS = {
+    protanopia:   "url('#aw-f-protanopia')",
+    deuteranopia: "url('#aw-f-deuteranopia')",
+    tritanopia:   "url('#aw-f-tritanopia')",
+    monochromia:  'grayscale(1)',
+  };
+
+  // Combina todos os filtros ativos num único `filter` no body. O widget fica
+  // fora do body (ver injectHTML), então não é afetado nem perde o position: fixed.
+  function applyFilters() {
+    const f = [];
+    if (prefs.darkMode)        f.push('invert(1) hue-rotate(180deg)');
+    if (prefs.invertColors)    f.push('invert(1)');
+    if (prefs.highContrast)    f.push('contrast(2.4)');
+    if (prefs.saturationBoost) f.push('saturate(3) contrast(1.1)');
+    if (CB_FILTERS[prefs.colorBlind]) f.push(CB_FILTERS[prefs.colorBlind]);
+    if (f.length) document.body.style.setProperty('filter', f.join(' '), 'important');
+    else document.body.style.removeProperty('filter');
   }
 
   function applyFontSize() {
@@ -559,7 +570,16 @@
 
   function applyVideos() {
     document.querySelectorAll('video').forEach(v => {
-      if (prefs.pauseVideos) { v.pause(); v.autoplay = false; }
+      if (prefs.pauseVideos) {
+        if (!v.paused || v.autoplay) v.dataset.awPaused = '1';
+        v.pause(); v.autoplay = false;
+      } else if (v.dataset.awPaused) {
+        // Retoma apenas os vídeos que o widget pausou
+        delete v.dataset.awPaused;
+        v.autoplay = true;
+        const p = v.play();
+        if (p && p.catch) p.catch(() => {});
+      }
     });
   }
 
@@ -598,7 +618,9 @@
     });
 
     document.querySelectorAll('.aw-chip').forEach(chip => {
-      chip.classList.toggle('active', chip.dataset.cb === prefs.colorBlind);
+      const on = chip.dataset.cb === prefs.colorBlind;
+      chip.classList.toggle('active', on);
+      chip.setAttribute('aria-checked', String(on));
     });
 
     const pctEl = document.getElementById('aw-font-pct');
@@ -681,18 +703,51 @@
 
   function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
 
+  // Área visível sem a barra de rolagem — é a referência de top/right/bottom
+  // em elementos position: fixed (window.innerWidth inclui a barra).
+  function viewW() { return document.documentElement.clientWidth  || window.innerWidth; }
+  function viewH() { return document.documentElement.clientHeight || window.innerHeight; }
+
+  // Abre o painel acima ou abaixo do botão (onde houver mais espaço),
+  // sempre dentro da janela.
+  function positionPanel() {
+    const btn   = document.getElementById('a11y-btn');
+    const panel = document.getElementById('a11y-panel');
+    if (!btn || !panel || !panel.classList.contains('open')) return;
+    const GAP = 12, M = 8;
+    const r = btn.getBoundingClientRect();
+    const above = r.top - GAP - M;
+    const below = viewH() - r.bottom - GAP - M;
+    const right = clamp(viewW() - r.right, M,
+                        Math.max(M, viewW() - panel.offsetWidth - M));
+    panel.style.left  = 'auto';
+    panel.style.right = right + 'px';
+    if (above >= below) {
+      panel.style.top    = 'auto';
+      panel.style.bottom = (viewH() - r.top + GAP) + 'px';
+      panel.style.maxHeight = Math.max(160, above) + 'px';
+    } else {
+      panel.style.bottom = 'auto';
+      panel.style.top    = (r.bottom + GAP) + 'px';
+      panel.style.maxHeight = Math.max(160, below) + 'px';
+    }
+  }
+
   function initDraggable() {
     const btn   = document.getElementById('a11y-btn');
     const panel = document.getElementById('a11y-panel');
     let isDragging = false;
     let moved = false;
+    let suppressClick = false;
     let startX, startY, startRight, startBottom;
 
-    // Restaura posição salva
+    // Restaura posição salva (limitada à janela atual)
     const saved = loadBtnPos();
-    if (saved) {
-      btn.style.bottom = saved.bottom + 'px';
-      btn.style.right  = saved.right  + 'px';
+    if (saved && isFinite(saved.bottom) && isFinite(saved.right)) {
+      const right  = clamp(saved.right,  8, Math.max(8, viewW()  - btn.offsetWidth  - 8));
+      const bottom = clamp(saved.bottom, 8, Math.max(8, viewH() - btn.offsetHeight - 8));
+      btn.style.bottom = bottom + 'px';
+      btn.style.right  = right  + 'px';
       btn.style.top    = 'auto';
       btn.style.left   = 'auto';
     }
@@ -709,8 +764,8 @@
       startX = x;
       startY = y;
       const rect = btn.getBoundingClientRect();
-      startRight  = window.innerWidth  - rect.right;
-      startBottom = window.innerHeight - rect.bottom;
+      startRight  = viewW()  - rect.right;
+      startBottom = viewH() - rect.bottom;
       isDragging = true;
       moved = false;
       btn.style.transition = 'none';
@@ -727,8 +782,8 @@
 
       const BW = btn.offsetWidth;
       const BH = btn.offsetHeight;
-      const newRight  = clamp(startRight  - dx, 8, window.innerWidth  - BW - 8);
-      const newBottom = clamp(startBottom + dy, 8, window.innerHeight - BH - 8);
+      const newRight  = clamp(startRight  - dx, 8, viewW()  - BW - 8);
+      const newBottom = clamp(startBottom - dy, 8, viewH() - BH - 8);
 
       btn.style.right  = newRight  + 'px';
       btn.style.bottom = newBottom + 'px';
@@ -736,11 +791,7 @@
       btn.style.left   = 'auto';
 
       // Reposiciona painel junto ao botão
-      const GAP = 12;
-      panel.style.right  = newRight + 'px';
-      panel.style.bottom = (newBottom + BH + GAP) + 'px';
-      panel.style.top    = 'auto';
-      panel.style.left   = 'auto';
+      positionPanel();
     }
 
     function onEnd(e) {
@@ -753,9 +804,10 @@
           parseFloat(btn.style.bottom),
           parseFloat(btn.style.right)
         );
-        // Impede que o click abra o painel após arrastar
+        suppressClick = true;
+        // touchend com preventDefault não gera click; limpa a flag nesse caso
+        setTimeout(() => { suppressClick = false; }, 400);
         e.preventDefault();
-        e.stopPropagation();
       }
       moved = false;
     }
@@ -766,9 +818,18 @@
     document.addEventListener('touchmove',  onMove, { passive: false });
     document.addEventListener('mouseup',  onEnd);
     document.addEventListener('touchend', onEnd);
+
+    // Impede que o click gerado ao soltar o botão abra/feche o painel após arrastar
+    btn.addEventListener('click', function (e) {
+      if (suppressClick) { suppressClick = false; e.stopImmediatePropagation(); }
+    }, true);
   }
+
+  // ─── Atalho de teclado (Alt+A) ────────────────────────────────────────────
+  function bindKeyShortcut() {
     document.addEventListener('keydown', function (e) {
-      if (e.altKey && e.key === 'a') {
+      // e.code funciona com Caps Lock e no macOS (onde Alt+A gera "å")
+      if (e.altKey && (e.code === 'KeyA' || e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         document.getElementById('a11y-btn').click();
       }
@@ -781,19 +842,24 @@
     const panel = document.getElementById('a11y-panel');
     const close = document.getElementById('aw-close');
 
-    function openPanel()  { panel.classList.add('open');    btn.setAttribute('aria-expanded','true');  }
+    function openPanel()  { panel.classList.add('open');    btn.setAttribute('aria-expanded','true'); positionPanel(); }
     function closePanel() { panel.classList.remove('open'); btn.setAttribute('aria-expanded','false'); btn.focus(); }
 
     btn.addEventListener('click',   () => panel.classList.contains('open') ? closePanel() : openPanel());
     close.addEventListener('click', closePanel);
+    window.addEventListener('resize', positionPanel);
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
     });
 
-    // Click fora fecha
+    // Click fora fecha (sem roubar o foco quando o painel já está fechado)
     document.addEventListener('click', e => {
-      if (!panel.contains(e.target) && e.target !== btn) closePanel();
+      if (!panel.classList.contains('open')) return;
+      if (!panel.contains(e.target) && !btn.contains(e.target)) {
+        panel.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
     }, true);
 
     // Linhas de toggle
@@ -856,7 +922,9 @@
     const wrap = document.createElement('div');
     wrap.id = WIDGET_ID;
     wrap.innerHTML = panelHTML();
-    document.body.appendChild(wrap);
+    // Fica como irmão do <body>: os filtros aplicados ao body não alteram as
+    // cores do painel nem transformam o body em containing block do botão fixo.
+    document.documentElement.appendChild(wrap);
   }
 
   // ─── Init ──────────────────────────────────────────────────────────────────
@@ -885,7 +953,7 @@
     getPrefs:   () => Object.assign({}, prefs),
     applyPrefs: (p) => { Object.assign(prefs, p); savePrefs(); applyAll(); syncUI(); },
     reset:      () => document.getElementById('aw-reset').click(),
-    open:       () => { document.getElementById('a11y-panel').classList.add('open'); document.getElementById('a11y-btn').setAttribute('aria-expanded','true'); },
+    open:       () => { document.getElementById('a11y-panel').classList.add('open'); document.getElementById('a11y-btn').setAttribute('aria-expanded','true'); positionPanel(); },
     close:      () => { document.getElementById('a11y-panel').classList.remove('open'); document.getElementById('a11y-btn').setAttribute('aria-expanded','false'); },
     speak:      (text) => {
       if (!('speechSynthesis' in window)) return;

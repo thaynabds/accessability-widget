@@ -12,9 +12,9 @@
   </parent>
 
   <groupId>br.com.thaynabds</groupId>
-  <artifactId>a11y-api</artifactId>
+  <artifactId>a11y-widget-api</artifactId>
   <version>1.0.0</version>
-  <name>a11y-api</name>
+  <name>a11y-widget-api</name>
   <description>Preferences API for a11y-widget — Spring Boot 3 + Spring Security + JWT</description>
 
   <properties>
