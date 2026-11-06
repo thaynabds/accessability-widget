@@ -1,5 +1,7 @@
 package br.com.thaynabds.a11yapi.controller;
 
+import jakarta.validation.Valid;
+
 import br.com.thaynabds.a11yapi.dto.PreferencesDto;
 import br.com.thaynabds.a11yapi.service.PreferencesService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +34,7 @@ public class PreferencesController {
     @Operation(summary = "Save preferences for the authenticated user")
     public ResponseEntity<PreferencesDto> save(
         @AuthenticationPrincipal UserDetails user,
-        @RequestBody PreferencesDto dto
+        @RequestBody @Valid PreferencesDto dto
     ) {
         return ResponseEntity.ok(preferencesService.save(user.getUsername(), dto));
     }

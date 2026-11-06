@@ -1,11 +1,11 @@
 /*!
  * a11y-widget.js — Widget de Acessibilidade Universal
  * Autor: Thayná Batista da Silva — github.com/thaynabds
- * Versão: 2.0.0
+ * Versão: 2.0.1
  * Licença: MIT
  *
  * Embed (uma linha):
- * <script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@latest/src/a11y-widget.js"></script>
+ * <script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@2.0.1/src/a11y-widget.js"></script>
  *
  * Conformidade: WCAG 2.2 / LBI (Lei Brasileira de Inclusão 13.146/2015)
  */
@@ -46,7 +46,29 @@
     tts:              false,     // lê texto selecionado ao pressionar o botão
   };
 
-  let prefs = Object.assign({}, defaults, loadPrefs());
+  const COLOR_BLIND_MODES = ['none', 'protanopia', 'deuteranopia', 'tritanopia', 'monochromia'];
+
+  // Aceita só chaves conhecidas, com o tipo certo e dentro dos limites.
+  // Protege contra localStorage adulterado e contra applyPrefs com dados
+  // arbitrários (ex.: chave "__proto__", fontSize enorme, filtro inexistente).
+  function sanitizePrefs(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object') return out;
+    Object.keys(defaults).forEach(key => {
+      if (!Object.prototype.hasOwnProperty.call(raw, key)) return;
+      const v = raw[key];
+      if (key === 'colorBlind') {
+        if (COLOR_BLIND_MODES.indexOf(v) !== -1) out[key] = v;
+      } else if (key === 'fontSize') {
+        if (typeof v === 'number' && isFinite(v)) out[key] = clamp(Math.round(v), -2, 4);
+      } else if (typeof v === 'boolean') {
+        out[key] = v;
+      }
+    });
+    return out;
+  }
+
+  let prefs = Object.assign({}, defaults, sanitizePrefs(loadPrefs()));
   let speechActive = false;
 
   // ─── Persistência ──────────────────────────────────────────────────────────
@@ -774,6 +796,8 @@
 
     function onMove(e) {
       if (!isDragging) return;
+      // Durante o arrasto por toque, a página não deve rolar junto
+      if (e.touches && e.cancelable) e.preventDefault();
       const { x, y } = getPos(e);
       const dx = x - startX;
       const dy = y - startY;
@@ -804,12 +828,28 @@
           parseFloat(btn.style.bottom),
           parseFloat(btn.style.right)
         );
-        suppressClick = true;
-        // touchend com preventDefault não gera click; limpa a flag nesse caso
-        setTimeout(() => { suppressClick = false; }, 400);
+        // Só o mouseup gera um click logo depois; no toque, o preventDefault
+        // do touchend já impede. A flag expira caso o click não chegue
+        // (ex.: botão solto fora do ícone).
+        if (e.type === 'mouseup') {
+          suppressClick = true;
+          setTimeout(() => { suppressClick = false; }, 400);
+        }
         e.preventDefault();
+      } else if (e.type === 'touchend') {
+        // O preventDefault do touchstart cancela o click sintético do navegador;
+        // sem isso, tocar no ícone no celular não abria o painel.
+        e.preventDefault();
+        btn.click();
       }
       moved = false;
+    }
+
+    function onCancel() {
+      if (!isDragging) return;
+      isDragging = false;
+      moved = false;
+      btn.style.transition = '';
     }
 
     btn.addEventListener('mousedown',  onStart, { passive: false });
@@ -817,7 +857,8 @@
     document.addEventListener('mousemove',  onMove);
     document.addEventListener('touchmove',  onMove, { passive: false });
     document.addEventListener('mouseup',  onEnd);
-    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchend', onEnd, { passive: false });
+    document.addEventListener('touchcancel', onCancel);
 
     // Impede que o click gerado ao soltar o botão abra/feche o painel após arrastar
     btn.addEventListener('click', function (e) {
@@ -897,13 +938,7 @@
     document.getElementById('aw-tts-btn').addEventListener('click', speakSelection);
 
     // Reset
-    document.getElementById('aw-reset').addEventListener('click', () => {
-      window.speechSynthesis && window.speechSynthesis.cancel();
-      speechActive = false;
-      prefs = Object.assign({}, defaults);
-      document.documentElement.style.fontSize = '';
-      savePrefs(); applyAll(); syncUI();
-    });
+    document.getElementById('aw-reset').addEventListener('click', resetAll);
 
     // Vídeos novos adicionados ao DOM
     if (window.MutationObserver) {
@@ -938,7 +973,7 @@
     initReadingGuide();
     bindKeyShortcut();
     initDraggable();
-    console.info('[a11y-widget v2.0] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
+    console.info('[a11y-widget v2.0.1] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
   }
 
   if (document.readyState === 'loading') {
@@ -948,13 +983,39 @@
   }
 
   // ─── API pública ───────────────────────────────────────────────────────────
+  function resetAll() {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    speechActive = false;
+    prefs = Object.assign({}, defaults);
+    savePrefs();
+    if (document.body) { applyAll(); syncUI(); }
+    updateTtsBtn();
+  }
+
+  // A API pode ser chamada antes do DOMContentLoaded: monta o widget se o
+  // <body> já existe; senão só guarda as preferências, aplicadas no init.
+  function ensureReady() {
+    if (!document.getElementById(WIDGET_ID) && document.body) init();
+    return !!document.getElementById(WIDGET_ID);
+  }
+
+  function setPanelOpen(open) {
+    if (!ensureReady()) return;
+    document.getElementById('a11y-panel').classList.toggle('open', open);
+    document.getElementById('a11y-btn').setAttribute('aria-expanded', String(open));
+    if (open) positionPanel();
+  }
+
   window.A11yWidget = {
-    version:    '2.0.0',
+    version:    '2.0.1',
     getPrefs:   () => Object.assign({}, prefs),
-    applyPrefs: (p) => { Object.assign(prefs, p); savePrefs(); applyAll(); syncUI(); },
-    reset:      () => document.getElementById('aw-reset').click(),
-    open:       () => { document.getElementById('a11y-panel').classList.add('open'); document.getElementById('a11y-btn').setAttribute('aria-expanded','true'); positionPanel(); },
-    close:      () => { document.getElementById('a11y-panel').classList.remove('open'); document.getElementById('a11y-btn').setAttribute('aria-expanded','false'); },
+    applyPrefs: (p) => {
+      Object.assign(prefs, sanitizePrefs(p)); savePrefs();
+      if (ensureReady()) { applyAll(); syncUI(); }
+    },
+    reset:      () => { ensureReady(); resetAll(); },
+    open:       () => setPanelOpen(true),
+    close:      () => setPanelOpen(false),
     speak:      (text) => {
       if (!('speechSynthesis' in window)) return;
       const u = new SpeechSynthesisUtterance(text);

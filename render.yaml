@@ -1,11 +1,12 @@
 # Blueprint do Render para a API do a11y-widget (api/).
+# Caminhos relativos à raiz do repositório.
 services:
   - type: web
     name: a11y-widget-api
     runtime: docker
     plan: free
-    rootDir: api
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
     healthCheckPath: /v3/api-docs
     envVars:
       - key: JWT_SECRET

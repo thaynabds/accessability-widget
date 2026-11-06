@@ -21,14 +21,16 @@ Widget de acessibilidade universal para web. Adicione ao seu site com **uma linh
 Cole antes do `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@latest/src/a11y-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@2.0.1/src/a11y-widget.js"></script>
 ```
 
-O botão aparece no canto inferior direito e pode ser arrastado para outra posição (a posição é lembrada). Atalho de teclado: `Alt+A`.
+Use a URL com versão (`@2.0.1`): ela nunca muda e o jsDelivr a entrega na hora. Com `@latest` o CDN pode servir uma versão antiga em cache por até 7 dias depois de uma atualização.
+
+O botão aparece no canto inferior direito. Clique (ou toque, no celular) para abrir o painel; arraste para mudar a posição, que fica salva. Atalho de teclado: `Alt+A`; `Esc` fecha.
 
 ---
 
-## Funcionalidades (v2.0)
+## Funcionalidades (v2.0.1)
 
 | # | Recurso | Implementação técnica | Beneficiários |
 |---|---|---|---|
@@ -48,8 +50,8 @@ O botão aparece no canto inferior direito e pode ser arrastado para outra posi�
 | 14 | 🎬 Pausar vídeos | `.pause()` em todos os `<video>` + `MutationObserver` | Epilepsia, concentração |
 | 15 | 🖱 Cursor grande | SVG cursor inline via `cursor: url(...)` | Tremor, baixa visão motora |
 | 16 | 🎯 Foco de teclado | `outline: 3px solid #ffcc00` em `:focus` | Navegação por teclado |
-| 17 | 📏 Guia de leitura | Overlay com faixa transparente seguindo o mouse | Dislexia, TDAH |
-| 18 | 🔊 Ler texto (TTS) | Web Speech API `SpeechSynthesisUtterance` | Cegueira, baixa visão |
+| 17 | 📏 Guia de leitura | Overlay com faixa transparente seguindo o mouse (em telas de toque não há cursor para seguir) | Dislexia, TDAH |
+| 18 | 🔊 Ler texto (TTS) | Web Speech API `SpeechSynthesisUtterance` — lê o texto selecionado na página | Cegueira, baixa visão |
 | 19 | 💾 Persistência | `localStorage` — sem servidor obrigatório | Todos |
 
 ---
@@ -83,6 +85,8 @@ window.A11yWidget.close();
 window.A11yWidget.reset();
 ```
 
+A API pode ser chamada a qualquer momento, inclusive antes de a página terminar de carregar. Valores inválidos em `applyPrefs` (chaves desconhecidas, tipos errados, `fontSize` fora de -2 a 4, filtro de daltonismo inexistente) são ignorados.
+
 ---
 
 ## Backend (opcional)
@@ -99,13 +103,18 @@ cd api && ./mvnw spring-boot:run
 
 Swagger em `http://localhost:8080/swagger-ui.html`. Testes: `./mvnw test`.
 
-Deploy gratuito: [Render](https://render.com) via Blueprint — o arquivo `render.yaml` na raiz constrói o `api/Dockerfile`. Defina `JWT_SECRET` (gerado automaticamente pelo Blueprint) e `CORS_ORIGINS`.
+Variáveis de ambiente:
+- `JWT_SECRET` — chave de assinatura dos tokens, com pelo menos 32 bytes. Sem ela a API gera uma chave aleatória a cada inicialização (bom para testar localmente; os tokens deixam de valer quando ela reinicia). Não há chave fixa no código.
+- `CORS_ORIGINS` — origens autorizadas, separadas por vírgula (padrão inclui `https://thaynabds.github.io` e `localhost:5500`).
+- `PORT` — porta HTTP (padrão `8080`).
+
+Deploy gratuito: [Render](https://render.com) → **New > Blueprint** → selecione este repositório. O `render.yaml` da raiz constrói o `api/Dockerfile` e gera o `JWT_SECRET` automaticamente.
 
 Endpoints:
 - `POST /api/auth/register` — cadastro
 - `POST /api/auth/login` — retorna JWT
 - `GET  /api/preferences` — lê preferências (requer JWT)
-- `PUT  /api/preferences` — salva preferências (requer JWT)
+- `PUT  /api/preferences` — salva preferências (requer JWT; `fontSize` de -2 a 4 e `colorBlind` entre `none`, `protanopia`, `deuteranopia`, `tritanopia`, `monochromia`)
 
 ---
 
@@ -114,14 +123,19 @@ Endpoints:
 1. Repositório público: [`thaynabds/a11y-widget`](https://github.com/thaynabds/a11y-widget).
 2. Settings > Pages > Source: **GitHub Actions**.
 3. Push na `main` — o workflow `.github/workflows/pages.yml` publica a demo em `https://thaynabds.github.io/a11y-widget/demo/` (a raiz redireciona para ela).
-4. jsDelivr serve o script em: `cdn.jsdelivr.net/gh/thaynabds/a11y-widget@latest/src/a11y-widget.js`
+4. Para uma nova versão do widget, crie uma tag (`git tag v2.0.2 && git push origin v2.0.2`) e atualize a URL `@2.0.2` no README e na demo. O jsDelivr serve cada tag em `cdn.jsdelivr.net/gh/thaynabds/a11y-widget@<versão>/src/a11y-widget.js`.
+
+## Testes
+
+- Widget: abra `tests/widget.test.html` num servidor local (ex.: `python3 -m http.server 5500` na raiz e acesse `http://localhost:5500/tests/widget.test.html`), de preferência com emulação de celular no DevTools para incluir os testes de toque. A página mostra `WIDGET_TESTS_OK` quando tudo passa.
+- API: `cd api && ./mvnw test`.
 
 ---
 
 ## Stack
 
 - Vanilla JavaScript ES2015+ (zero dependências de runtime)
-- CSS3 com `filter`, `clip-path`, SVG `feColorMatrix`
+- CSS3 com `filter` e SVG `feColorMatrix`
 - Web Speech API (TTS)
 - MutationObserver (vídeos dinâmicos)
 

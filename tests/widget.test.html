@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>a11y-widget — testes</title>
+  <style>body { font-family: sans-serif; padding: 16px; } .fail { color: #b00020; } .pass { color: #1b5e20; }</style>
+</head>
+<body>
+  <h1>Testes do a11y-widget</h1>
+  <p><a href="#">link de teste</a></p>
+  <img alt="imagem de teste" width="10" height="10" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">
+  <pre id="out">rodando…</pre>
+
+  <script>
+    // localStorage adulterado ANTES de carregar o widget
+    try {
+      localStorage.removeItem('a11y-widget-pos');
+      localStorage.setItem('a11y-widget-v2', JSON.stringify({
+        __proto__: { polluted: true }, fontSize: 9999, colorBlind: 'url(javascript:alert(1))',
+        darkMode: 'yes', highContrast: true, unknownKey: 1,
+      }));
+      // JSON.stringify ignora __proto__ literal; grava a chave própria manualmente
+      localStorage.setItem('a11y-widget-v2',
+        localStorage.getItem('a11y-widget-v2').replace('{', '{"__proto__":{"polluted":true},'));
+    } catch (_) {}
+  </script>
+  <script src="../src/a11y-widget.js"></script>
+  <script>
+  // Chamadas à API antes do DOMContentLoaded não podem quebrar
+  let earlyError = null;
+  try { A11yWidget.getPrefs(); A11yWidget.close(); } catch (e) { earlyError = e; }
+
+  (async function () {
+    const results = [];
+    const ok = (name, cond) => results.push([name, !!cond]);
+    ok('API chamada antes do DOMContentLoaded não quebra', earlyError === null);
+    const $ = id => document.getElementById(id);
+    const tick = (ms) => new Promise(r => setTimeout(r, ms || 0));
+    const btn = $('a11y-btn'), panel = $('a11y-panel');
+    const isOpen = () => panel.classList.contains('open');
+
+    // ── Sanitização de preferências ──
+    const p = A11yWidget.getPrefs();
+    ok('localStorage: __proto__ não polui o objeto', p.polluted === undefined && ({}).polluted === undefined);
+    ok('localStorage: fontSize limitado a +4', p.fontSize === 4);
+    ok('localStorage: colorBlind inválido ignorado', p.colorBlind === 'none');
+    ok('localStorage: tipo errado ignorado (darkMode "yes")', p.darkMode === false);
+    ok('localStorage: booleano válido aceito', p.highContrast === true);
+    ok('localStorage: chave desconhecida descartada', !('unknownKey' in p));
+    ok('filtro do body sem valor injetado', !document.body.style.filter.includes('javascript'));
+    A11yWidget.applyPrefs(JSON.parse('{"__proto__":{"x":1},"fontSize":-50,"colorBlind":"tritanopia","bigCursor":1}'));
+    const q = A11yWidget.getPrefs();
+    ok('applyPrefs: fontSize limitado a -2', q.fontSize === -2);
+    ok('applyPrefs: colorBlind válido aceito', q.colorBlind === 'tritanopia');
+    ok('applyPrefs: número não vira booleano', q.bigCursor === false);
+    ok('applyPrefs: __proto__ ignorado', q.x === undefined);
+    A11yWidget.reset();
+    ok('reset limpa tudo', !document.body.style.filter && A11yWidget.getPrefs().fontSize === 0);
+
+    // ── Toque no ícone (celular) ──
+    function touch(type, x, y) {
+      const t = new Touch({ identifier: 1, target: btn, clientX: x, clientY: y });
+      const ev = new TouchEvent(type, {
+        touches: type === 'touchend' ? [] : [t], targetTouches: type === 'touchend' ? [] : [t],
+        changedTouches: [t], bubbles: true, cancelable: true,
+      });
+      btn.dispatchEvent(ev);
+      return ev;
+    }
+    const r = btn.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    if (typeof Touch === 'function') {
+      touch('touchstart', cx, cy); touch('touchend', cx, cy);
+      ok('toque no ícone abre o painel', isOpen());
+      touch('touchstart', cx, cy); touch('touchend', cx, cy);
+      ok('segundo toque fecha o painel', !isOpen());
+      touch('touchstart', cx, cy);
+      const mv = touch('touchmove', cx - 60, cy - 60);
+      touch('touchend', cx - 60, cy - 60);
+      ok('arrastar por toque move o botão', btn.style.right !== '' && btn.getBoundingClientRect().left < r.left);
+      ok('arrastar por toque não abre o painel', !isOpen());
+      ok('arrastar por toque não rola a página', mv.defaultPrevented);
+      localStorage.removeItem('a11y-widget-pos'); btn.removeAttribute('style');
+    } else {
+      ok('ambiente sem Touch (rode com emulação de celular)', false);
+    }
+
+    // ── Mouse e teclado ──
+    btn.click(); ok('clique abre', isOpen());
+    btn.click(); ok('clique fecha', !isOpen());
+    document.dispatchEvent(new KeyboardEvent('keydown', { altKey: true, code: 'KeyA', key: 'å', bubbles: true }));
+    ok('Alt+A abre', isOpen());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    ok('Esc fecha', !isOpen());
+
+    // ── Recursos ──
+    $('a11y-btn').click();
+    $('aw-dark').click(); $('aw-contrast').click();
+    ok('filtros combinam', /invert/.test(document.body.style.filter) && /contrast\(2\.4\)/.test(document.body.style.filter));
+    $('aw-links').click();
+    ok('destacar links', getComputedStyle(document.querySelector('a')).backgroundColor === 'rgb(255, 243, 205)');
+    $('aw-images').click();
+    ok('ocultar imagens', getComputedStyle(document.querySelector('img')).visibility === 'hidden');
+    A11yWidget.reset(); A11yWidget.close();
+
+    await tick();
+    const failed = results.filter(x => !x[1]);
+    const out = $('out');
+    out.innerHTML = '';
+    results.forEach(([n, pass]) => {
+      const line = document.createElement('div');
+      line.className = pass ? 'pass' : 'fail';
+      line.textContent = (pass ? 'PASS ' : 'FAIL ') + n;
+      out.appendChild(line);
+    });
+    const summary = document.createElement('strong');
+    summary.id = 'summary';
+    summary.textContent = failed.length ? ('WIDGET_TESTS_FAILED ' + failed.length + '/' + results.length)
+                                        : ('WIDGET_TESTS_OK ' + results.length);
+    out.appendChild(summary);
+  })();
+  </script>
+</body>
+</html>
