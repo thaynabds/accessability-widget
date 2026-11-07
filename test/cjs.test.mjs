@@ -11,8 +11,8 @@ test('require() do pacote e do React funciona', () => {
   const widget = require('../index.cjs');
   const react = require('../react/index.cjs');
   assert.equal(typeof widget.init, 'function');
-  assert.equal(typeof react.A11yWidget, 'function');
-  assert.equal(react.default, react.A11yWidget);
+  assert.equal(typeof react.AccessAbilityWidget, 'function');
+  assert.equal(react.default, react.AccessAbilityWidget);
   assert.equal(widget.isMounted(), false, 'pelo pacote não monta sozinho');
 });
 

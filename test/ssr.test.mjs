@@ -21,11 +21,11 @@ test('o pacote importa no servidor e a API não quebra', async () => {
 test('componente e hook renderizam no servidor sem erro', async () => {
   const { createElement: h } = await import('react');
   const { renderToString } = await import('react-dom/server');
-  const { A11yWidget, useA11yWidget } = await import('../react/index.mjs');
+  const { AccessAbilityWidget, useAccessAbilityWidget } = await import('../react/index.mjs');
   function Estado() {
-    const { prefs } = useA11yWidget();
+    const { prefs } = useAccessAbilityWidget();
     return h('p', null, prefs === null ? 'sem-prefs' : 'com-prefs');
   }
-  const html = renderToString(h('div', null, h(A11yWidget, { prefs: { darkMode: true } }), h(Estado)));
+  const html = renderToString(h('div', null, h(AccessAbilityWidget, { prefs: { darkMode: true } }), h(Estado)));
   assert.equal(html, '<div><p>sem-prefs</p></div>');
 });

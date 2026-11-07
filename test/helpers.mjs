@@ -1,7 +1,7 @@
 import { JSDOM } from 'jsdom';
 import { readFileSync } from 'node:fs';
 
-export const WIDGET_SRC = readFileSync(new URL('../src/a11y-widget.js', import.meta.url), 'utf8');
+export const WIDGET_SRC = readFileSync(new URL('../src/accessability-widget.js', import.meta.url), 'utf8');
 
 const PAGE = '<!doctype html><html lang="pt-BR"><head></head><body>'
   + '<h2>Título</h2><p><a href="#">link</a></p><img alt="imagem"><video></video></body></html>';

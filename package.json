@@ -1,6 +1,6 @@
 {
-  "name": "@thaynabds/a11y-widget",
-  "version": "2.1.0",
+  "name": "@thaynabds/accessability-widget",
+  "version": "2.1.1",
   "description": "Widget de acessibilidade para web com 19 recursos (WCAG 2.2 / LBI), em JavaScript puro, com componente e hook React.",
   "main": "./index.cjs",
   "module": "./index.mjs",
@@ -26,7 +26,7 @@
         "default": "./react/index.cjs"
       }
     },
-    "./browser": "./src/a11y-widget.js",
+    "./browser": "./src/accessability-widget.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -38,13 +38,13 @@
     "react/index.mjs",
     "react/index.d.ts",
     "react/index.d.mts",
-    "src/a11y-widget.js",
+    "src/accessability-widget.js",
     "src/manual.js",
     "README.md",
     "LICENSE"
   ],
   "sideEffects": [
-    "./src/a11y-widget.js",
+    "./src/accessability-widget.js",
     "./src/manual.js",
     "./index.cjs",
     "./index.mjs"
@@ -78,13 +78,13 @@
   ],
   "author": "Thayná Batista da Silva (https://github.com/thaynabds)",
   "license": "MIT",
-  "homepage": "https://thaynabds.github.io/a11y-widget/demo/",
+  "homepage": "https://thaynabds.github.io/accessability-widget/demo/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thaynabds/a11y-widget.git"
+    "url": "git+https://github.com/thaynabds/accessability-widget.git"
   },
   "bugs": {
-    "url": "https://github.com/thaynabds/a11y-widget/issues"
+    "url": "https://github.com/thaynabds/accessability-widget/issues"
   },
   "publishConfig": {
     "access": "public"

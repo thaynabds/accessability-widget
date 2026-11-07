@@ -1,8 +1,8 @@
-# Blueprint do Render para a API do a11y-widget (api/).
+# Blueprint do Render para a API do AccessAbility Widget (api/).
 # Caminhos relativos à raiz do repositório.
 services:
   - type: web
-    name: a11y-widget-api
+    name: accessability-widget-api
     runtime: docker
     plan: free
     dockerfilePath: ./api/Dockerfile

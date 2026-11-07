@@ -34,7 +34,7 @@ jobs:
         with:
           path: .
 
-      # A demo fica em: https://thaynabds.github.io/a11y-widget/demo/
+      # A demo fica em: https://thaynabds.github.io/accessability-widget/demo/
 
       - name: Deploy to GitHub Pages
         id: deployment

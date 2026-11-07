@@ -17,6 +17,7 @@ test('pela tag <script> o widget monta sozinho', async () => {
   assert.ok(win.document.getElementById('a11y-widget-root'));
   assert.equal(win.document.getElementById('a11y-widget-root').parentElement, win.document.documentElement);
   assert.equal(win.A11yWidget.isMounted(), true);
+  assert.equal(win.AccessAbilityWidget, win.A11yWidget, 'apelido com o nome do projeto');
 });
 
 test('com __A11Y_WIDGET_MANUAL__ só monta quando init() é chamado', async () => {

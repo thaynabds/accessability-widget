@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>a11y-widget — testes</title>
+  <title>AccessAbility Widget — testes</title>
   <style>body { font-family: sans-serif; padding: 16px; } .fail { color: #b00020; } .pass { color: #1b5e20; }</style>
 </head>
 <body>
-  <h1>Testes do a11y-widget</h1>
+  <h1>Testes do AccessAbility Widget</h1>
   <p><a href="#">link de teste</a></p>
   <img alt="imagem de teste" width="10" height="10" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">
   <pre id="out">rodando…</pre>
@@ -25,7 +25,7 @@
         localStorage.getItem('a11y-widget-v2').replace('{', '{"__proto__":{"polluted":true},'));
     } catch (_) {}
   </script>
-  <script src="../src/a11y-widget.js"></script>
+  <script src="../src/accessability-widget.js"></script>
   <script>
   // Chamadas à API antes do DOMContentLoaded não podem quebrar
   let earlyError = null;

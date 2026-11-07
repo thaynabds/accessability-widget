@@ -1,11 +1,11 @@
 /*!
- * a11y-widget.js — Widget de Acessibilidade Universal
+ * AccessAbility Widget — Widget de Acessibilidade Universal
  * Autor: Thayná Batista da Silva — github.com/thaynabds
- * Versão: 2.1.0
+ * Versão: 2.1.1
  * Licença: MIT
  *
  * Embed (uma linha):
- * <script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@2.1.0/src/a11y-widget.js"></script>
+ * <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.1/src/accessability-widget.js"></script>
  *
  * Conformidade: WCAG 2.2 / LBI (Lei Brasileira de Inclusão 13.146/2015)
  */
@@ -995,7 +995,7 @@
     initReadingGuide();
     bindKeyShortcut();
     initDraggable();
-    console.info('[a11y-widget v2.1.0] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
+    console.info('[AccessAbility Widget v2.1.1] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
   }
 
   // Remove o widget e desfaz todos os efeitos na página. As preferências
@@ -1053,7 +1053,7 @@
 
   window.A11yWidget = {
     __core:     true,
-    version:    '2.1.0',
+    version:    '2.1.1',
     init:       () => { ensureReady(); },
     destroy:    destroy,
     isMounted:  () => !!document.getElementById(WIDGET_ID),
@@ -1077,5 +1077,7 @@
       window.speechSynthesis.speak(u);
     },
   };
+  // Nome do projeto; window.A11yWidget continua valendo para quem já integrou.
+  window.AccessAbilityWidget = window.A11yWidget;
 
 })();

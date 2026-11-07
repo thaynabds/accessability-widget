@@ -1,10 +1,10 @@
 'use client';
 'use strict';
-// Integração React do @thaynabds/a11y-widget (CommonJS; index.mjs reexporta).
+// Integração React do @thaynabds/accessability-widget (CommonJS; index.mjs reexporta).
 const { useEffect, useRef, useState } = require('react');
 const widget = require('../index.cjs');
 
-// Vários <A11yWidget /> ao mesmo tempo compartilham um único widget: ele só é
+// Vários <AccessAbilityWidget /> ao mesmo tempo compartilham um único widget: ele só é
 // removido quando o último desmonta (também cobre o duplo mount do StrictMode).
 let mountedCount = 0;
 
@@ -15,7 +15,7 @@ let mountedCount = 0;
  *
  * @param {{ prefs?: object, onChange?: (prefs: object) => void }} props
  */
-function A11yWidget(props) {
+function AccessAbilityWidget(props) {
   const { prefs, onChange } = props || {};
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -44,7 +44,7 @@ function A11yWidget(props) {
  * Lê e controla o widget. `prefs` é null na primeira renderização (inclusive no
  * servidor) e passa a acompanhar as mudanças depois de montado.
  */
-function useA11yWidget() {
+function useAccessAbilityWidget() {
   const [prefs, setPrefs] = useState(null);
 
   useEffect(() => {
@@ -62,6 +62,6 @@ function useA11yWidget() {
   };
 }
 
-exports.A11yWidget = A11yWidget;
-exports.useA11yWidget = useA11yWidget;
-exports.default = A11yWidget;
+exports.AccessAbilityWidget = AccessAbilityWidget;
+exports.useAccessAbilityWidget = useAccessAbilityWidget;
+exports.default = AccessAbilityWidget;

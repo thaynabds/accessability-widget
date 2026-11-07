@@ -2,7 +2,7 @@ import type { A11yPrefs } from '../index.mjs';
 
 export type { A11yPrefs, ColorBlindMode } from '../index.mjs';
 
-export interface A11yWidgetProps {
+export interface AccessAbilityWidgetProps {
   /** Preferências a aplicar; reaplicadas quando o conteúdo muda. */
   prefs?: Partial<A11yPrefs>;
   /** Chamado a cada mudança feita pelo usuário ou pela API. */
@@ -10,10 +10,10 @@ export interface A11yWidgetProps {
 }
 
 /** Monta o widget enquanto estiver renderizado. Renderize uma vez, perto da raiz. */
-export function A11yWidget(props?: A11yWidgetProps): null;
-export default A11yWidget;
+export function AccessAbilityWidget(props?: AccessAbilityWidgetProps): null;
+export default AccessAbilityWidget;
 
-export function useA11yWidget(): {
+export function useAccessAbilityWidget(): {
   /** null na primeira renderização (e no servidor). */
   prefs: A11yPrefs | null;
   applyPrefs: (prefs: Partial<A11yPrefs>) => void;
