@@ -1,0 +1,95 @@
+{
+  "name": "@thaynabds/a11y-widget",
+  "version": "2.1.0",
+  "description": "Widget de acessibilidade para web com 19 recursos (WCAG 2.2 / LBI), em JavaScript puro, com componente e hook React.",
+  "main": "./index.cjs",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.mts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./react/index.d.mts",
+        "default": "./react/index.mjs"
+      },
+      "require": {
+        "types": "./react/index.d.ts",
+        "default": "./react/index.cjs"
+      }
+    },
+    "./browser": "./src/a11y-widget.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.cjs",
+    "index.mjs",
+    "index.d.ts",
+    "index.d.mts",
+    "react/index.cjs",
+    "react/index.mjs",
+    "react/index.d.ts",
+    "react/index.d.mts",
+    "src/a11y-widget.js",
+    "src/manual.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./src/a11y-widget.js",
+    "./src/manual.js",
+    "./index.cjs",
+    "./index.mjs"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "acessibilidade",
+    "wcag",
+    "lbi",
+    "widget",
+    "react",
+    "dyslexia",
+    "color-blind"
+  ],
+  "author": "Thayná Batista da Silva (https://github.com/thaynabds)",
+  "license": "MIT",
+  "homepage": "https://thaynabds.github.io/a11y-widget/demo/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thaynabds/a11y-widget.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thaynabds/a11y-widget/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

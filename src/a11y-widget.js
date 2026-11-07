@@ -1,16 +1,21 @@
 /*!
  * a11y-widget.js — Widget de Acessibilidade Universal
  * Autor: Thayná Batista da Silva — github.com/thaynabds
- * Versão: 2.0.1
+ * Versão: 2.1.0
  * Licença: MIT
  *
  * Embed (uma linha):
- * <script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@2.0.1/src/a11y-widget.js"></script>
+ * <script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@2.1.0/src/a11y-widget.js"></script>
  *
  * Conformidade: WCAG 2.2 / LBI (Lei Brasileira de Inclusão 13.146/2015)
  */
 (function () {
   'use strict';
+
+  // Importado no servidor (SSR do Next.js, testes em Node): não há DOM, não faz nada.
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  // Carregado duas vezes (ex.: CDN + npm): mantém a primeira instância.
+  if (window.A11yWidget && window.A11yWidget.__core) return;
 
   // ─── Constantes ────────────────────────────────────────────────────────────
   const STORAGE_KEY  = 'a11y-widget-v2';
@@ -79,6 +84,22 @@
   function savePrefs() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); }
     catch (_) {}
+    notifyChange();
+  }
+
+  // ─── Assinantes de mudança (usado pelo hook React) ─────────────────────────
+  const subscribers = [];
+  function notifyChange() {
+    const snapshot = Object.assign({}, prefs);
+    subscribers.slice().forEach(fn => { try { fn(snapshot); } catch (_) {} });
+  }
+
+  // ─── Listeners globais (removidos em destroy) ──────────────────────────────
+  let globalListeners = [];
+  let videoObserver = null;
+  function on(target, type, fn, opts) {
+    target.addEventListener(type, fn, opts);
+    globalListeners.push([target, type, fn, opts]);
   }
 
   // ─── CSS base ──────────────────────────────────────────────────────────────
@@ -657,7 +678,7 @@
     const maskBot = guide.querySelector('.rg-mask-bottom');
     const H = 36;
 
-    document.addEventListener('mousemove', function (e) {
+    on(document, 'mousemove', function (e) {
       if (!prefs.readingGuide) return;
       const y = e.clientY - H / 2;
       maskTop.style.cssText = `top:0; height:${Math.max(0, y)}px`;
@@ -854,11 +875,11 @@
 
     btn.addEventListener('mousedown',  onStart, { passive: false });
     btn.addEventListener('touchstart', onStart, { passive: false });
-    document.addEventListener('mousemove',  onMove);
-    document.addEventListener('touchmove',  onMove, { passive: false });
-    document.addEventListener('mouseup',  onEnd);
-    document.addEventListener('touchend', onEnd, { passive: false });
-    document.addEventListener('touchcancel', onCancel);
+    on(document, 'mousemove',  onMove);
+    on(document, 'touchmove',  onMove, { passive: false });
+    on(document, 'mouseup',  onEnd);
+    on(document, 'touchend', onEnd, { passive: false });
+    on(document, 'touchcancel', onCancel);
 
     // Impede que o click gerado ao soltar o botão abra/feche o painel após arrastar
     btn.addEventListener('click', function (e) {
@@ -868,7 +889,7 @@
 
   // ─── Atalho de teclado (Alt+A) ────────────────────────────────────────────
   function bindKeyShortcut() {
-    document.addEventListener('keydown', function (e) {
+    on(document, 'keydown', function (e) {
       // e.code funciona com Caps Lock e no macOS (onde Alt+A gera "å")
       if (e.altKey && (e.code === 'KeyA' || e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
@@ -888,14 +909,14 @@
 
     btn.addEventListener('click',   () => panel.classList.contains('open') ? closePanel() : openPanel());
     close.addEventListener('click', closePanel);
-    window.addEventListener('resize', positionPanel);
+    on(window, 'resize', positionPanel);
 
-    document.addEventListener('keydown', e => {
+    on(document, 'keydown', e => {
       if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
     });
 
     // Click fora fecha (sem roubar o foco quando o painel já está fechado)
-    document.addEventListener('click', e => {
+    on(document, 'click', e => {
       if (!panel.classList.contains('open')) return;
       if (!panel.contains(e.target) && !btn.contains(e.target)) {
         panel.classList.remove('open');
@@ -942,7 +963,8 @@
 
     // Vídeos novos adicionados ao DOM
     if (window.MutationObserver) {
-      new MutationObserver(() => applyVideos()).observe(document.body, { childList: true, subtree: true });
+      videoObserver = new MutationObserver(() => applyVideos());
+      videoObserver.observe(document.body, { childList: true, subtree: true });
     }
   }
 
@@ -973,13 +995,36 @@
     initReadingGuide();
     bindKeyShortcut();
     initDraggable();
-    console.info('[a11y-widget v2.0.1] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
+    console.info('[a11y-widget v2.1.0] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  // Remove o widget e desfaz todos os efeitos na página. As preferências
+  // continuam salvas e voltam no próximo init().
+  function destroy() {
+    globalListeners.forEach(([target, type, fn, opts]) => target.removeEventListener(type, fn, opts));
+    globalListeners = [];
+    if (videoObserver) { videoObserver.disconnect(); videoObserver = null; }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    speechActive = false;
+    const root = document.getElementById(WIDGET_ID);
+    if (root) root.remove();
+    const style = document.getElementById(STYLE_ID);
+    if (style) style.remove();
+    if (document.body) {
+      Object.values(CLASS_MAP).forEach(cls => document.body.classList.remove(cls));
+      document.body.style.removeProperty('filter');
+    }
+    document.documentElement.style.fontSize = '';
+  }
+
+  // O pacote npm define __A11Y_WIDGET_MANUAL__ para que o app (ou o
+  // componente React) decida quando montar. Pela tag <script>, monta sozinho.
+  if (!window.__A11Y_WIDGET_MANUAL__) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
   }
 
   // ─── API pública ───────────────────────────────────────────────────────────
@@ -1007,7 +1052,16 @@
   }
 
   window.A11yWidget = {
-    version:    '2.0.1',
+    __core:     true,
+    version:    '2.1.0',
+    init:       () => { ensureReady(); },
+    destroy:    destroy,
+    isMounted:  () => !!document.getElementById(WIDGET_ID),
+    subscribe:  (fn) => {
+      if (typeof fn !== 'function') return () => {};
+      subscribers.push(fn);
+      return () => { const i = subscribers.indexOf(fn); if (i !== -1) subscribers.splice(i, 1); };
+    },
     getPrefs:   () => Object.assign({}, prefs),
     applyPrefs: (p) => {
       Object.assign(prefs, sanitizePrefs(p)); savePrefs();

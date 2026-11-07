@@ -2,6 +2,7 @@
 
 Widget de acessibilidade universal para web. Adicione ao seu site com **uma linha de código**.
 
+[![npm](https://img.shields.io/npm/v/@thaynabds/a11y-widget)](https://www.npmjs.com/package/@thaynabds/a11y-widget)
 [![jsDelivr CDN](https://img.shields.io/badge/CDN-jsDelivr-orange)](https://www.jsdelivr.com/package/gh/thaynabds/a11y-widget)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Demo](https://img.shields.io/badge/demo-GitHub%20Pages-brightgreen)](https://thaynabds.github.io/a11y-widget/demo/)
@@ -18,19 +19,70 @@ Widget de acessibilidade universal para web. Adicione ao seu site com **uma linh
 
 ## Instalação
 
+Três formas: tag `<script>` (qualquer site), pacote npm (projetos com bundler) ou componente React.
+
+### 1. Tag `<script>` (CDN)
+
 Cole antes do `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@2.0.1/src/a11y-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/thaynabds/a11y-widget@2.1.0/src/a11y-widget.js"></script>
 ```
 
-Use a URL com versão (`@2.0.1`): ela nunca muda e o jsDelivr a entrega na hora. Com `@latest` o CDN pode servir uma versão antiga em cache por até 7 dias depois de uma atualização.
+Use a URL com versão (`@2.1.0`): ela nunca muda e o jsDelivr a entrega na hora. Com `@latest` o CDN pode servir uma versão antiga em cache por até 7 dias depois de uma atualização.
 
 O botão aparece no canto inferior direito. Clique (ou toque, no celular) para abrir o painel; arraste para mudar a posição, que fica salva. Atalho de teclado: `Alt+A`; `Esc` fecha.
 
+### 2. npm
+
+```bash
+npm install @thaynabds/a11y-widget
+```
+
+```js
+import { init } from '@thaynabds/a11y-widget';
+
+init(); // monta o widget na página
+```
+
+Pelo npm o widget **não** monta sozinho: chame `init()` (ou use o componente React). Importar o pacote no servidor (SSR) é seguro; as funções não fazem nada sem `window`. Tipos TypeScript incluídos.
+
+### 3. React
+
+```jsx
+import { A11yWidget, useA11yWidget } from '@thaynabds/a11y-widget/react';
+
+export default function App() {
+  return (
+    <>
+      {/* Renderize uma vez, perto da raiz. Some ao desmontar. */}
+      <A11yWidget onChange={(prefs) => console.log(prefs)} />
+      <Conteudo />
+    </>
+  );
+}
+
+function BotaoModoEscuro() {
+  const { prefs, applyPrefs, open } = useA11yWidget();
+  if (!prefs) return null; // null na primeira renderização e no servidor
+  return (
+    <>
+      <button onClick={() => applyPrefs({ darkMode: !prefs.darkMode })}>
+        Modo escuro: {prefs.darkMode ? 'ligado' : 'desligado'}
+      </button>
+      <button onClick={open}>Mais opções de acessibilidade</button>
+    </>
+  );
+}
+```
+
+- `<A11yWidget prefs={...} onChange={fn} />`: `prefs` aplica preferências (reaplicadas só quando o conteúdo muda); `onChange` recebe cada mudança.
+- `useA11yWidget()` devolve `{ prefs, applyPrefs, reset, open, close, speak }` e atualiza o componente a cada mudança.
+- Funciona com React 16.8+, StrictMode e Next.js (App Router: o módulo já tem `'use client'`).
+
 ---
 
-## Funcionalidades (v2.0.1)
+## Funcionalidades (v2.1.0)
 
 | # | Recurso | Implementação técnica | Beneficiários |
 |---|---|---|---|
@@ -83,7 +135,16 @@ window.A11yWidget.close();
 
 // Resetar tudo
 window.A11yWidget.reset();
+
+// Montar / remover o widget (remove também os efeitos na página)
+window.A11yWidget.init();
+window.A11yWidget.destroy();
+
+// Acompanhar mudanças; a função retornada cancela
+const parar = window.A11yWidget.subscribe((prefs) => console.log(prefs));
 ```
+
+Pelo npm, as mesmas funções existem como exports nomeados: `init`, `destroy`, `isMounted`, `getPrefs`, `applyPrefs`, `reset`, `open`, `close`, `speak`, `subscribe`.
 
 A API pode ser chamada a qualquer momento, inclusive antes de a página terminar de carregar. Valores inválidos em `applyPrefs` (chaves desconhecidas, tipos errados, `fontSize` fora de -2 a 4, filtro de daltonismo inexistente) são ignorados.
 
@@ -123,11 +184,13 @@ Endpoints:
 1. Repositório público: [`thaynabds/a11y-widget`](https://github.com/thaynabds/a11y-widget).
 2. Settings > Pages > Source: **GitHub Actions**.
 3. Push na `main` — o workflow `.github/workflows/pages.yml` publica a demo em `https://thaynabds.github.io/a11y-widget/demo/` (a raiz redireciona para ela).
-4. Para uma nova versão do widget, crie uma tag (`git tag v2.0.2 && git push origin v2.0.2`) e atualize a URL `@2.0.2` no README e na demo. O jsDelivr serve cada tag em `cdn.jsdelivr.net/gh/thaynabds/a11y-widget@<versão>/src/a11y-widget.js`.
+4. Para uma nova versão do widget, atualize `version` em `package.json`, `index.js` e `src/a11y-widget.js`, crie a tag (`git tag v2.1.1 && git push origin v2.1.1`) e atualize a URL `@2.1.1` no README e na demo.
+5. Publicar no npm: `npm login` e depois `npm publish` (o `package.json` já publica como pacote público e só envia os arquivos do widget, sem `api/` nem testes). O jsDelivr serve cada tag em `cdn.jsdelivr.net/gh/thaynabds/a11y-widget@<versão>/src/a11y-widget.js`.
 
 ## Testes
 
-- Widget: abra `tests/widget.test.html` num servidor local (ex.: `python3 -m http.server 5500` na raiz e acesse `http://localhost:5500/tests/widget.test.html`), de preferência com emulação de celular no DevTools para incluir os testes de toque. A página mostra `WIDGET_TESTS_OK` quando tudo passa.
+- Pacote, núcleo e React (Node + jsdom): `npm install && npm test`.
+- Widget no navegador: abra `tests/widget.test.html` num servidor local (ex.: `python3 -m http.server 5500` na raiz e acesse `http://localhost:5500/tests/widget.test.html`), de preferência com emulação de celular no DevTools para incluir os testes de toque. A página mostra `WIDGET_TESTS_OK` quando tudo passa.
 - API: `cd api && ./mvnw test`.
 
 ---
@@ -135,6 +198,7 @@ Endpoints:
 ## Stack
 
 - Vanilla JavaScript ES2015+ (zero dependências de runtime)
+- Integração React opcional (`@thaynabds/a11y-widget/react`, peer dependency `react >= 16.8`)
 - CSS3 com `filter` e SVG `feColorMatrix`
 - Web Speech API (TTS)
 - MutationObserver (vídeos dinâmicos)
