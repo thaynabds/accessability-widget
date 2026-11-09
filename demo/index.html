@@ -3,9 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AccessAbility Widget — demonstração</title>
-  <meta name="description" content="AccessAbility Widget: widget de acessibilidade para web com 30 recursos, adicionado com uma linha de código.">
+  <title>AccessAbility Widget: widget de acessibilidade gratuito para sites (WCAG 2.2)</title>
+  <meta name="description" content="Widget de acessibilidade gratuito e de código aberto para qualquer site: 30 recursos (temas, alto contraste, fonte para dislexia, leitura em voz alta, filtros de daltonismo), WCAG 2.2 e LBI, com uma linha de código, pacote npm e componente React.">
+  <meta name="keywords" content="widget de acessibilidade, acessibilidade web, WCAG 2.2, LBI 13.146/2015, a11y, plugin de acessibilidade, dislexia, daltonismo, alto contraste, leitor de tela, React, npm">
+  <meta name="author" content="Thayná Batista da Silva">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="theme-color" content="#1A4A8A">
   <link rel="canonical" href="https://thaynabds.github.io/accessability-widget/demo/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="sitemap" type="application/xml" href="https://thaynabds.github.io/accessability-widget/sitemap.xml">
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="AccessAbility Widget">
+  <meta property="og:title" content="AccessAbility Widget: widget de acessibilidade gratuito para sites">
+  <meta property="og:description" content="30 recursos de acessibilidade (WCAG 2.2 / LBI) adicionados com uma linha de código. JavaScript puro, pacote npm e componente React.">
+  <meta property="og:url" content="https://thaynabds.github.io/accessability-widget/demo/">
+  <meta property="og:image" content="https://thaynabds.github.io/accessability-widget/demo/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="AccessAbility Widget: widget de acessibilidade gratuito para sites, WCAG 2.2, LBI, 30 recursos">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="AccessAbility Widget: widget de acessibilidade gratuito para sites">
+  <meta name="twitter:description" content="30 recursos de acessibilidade (WCAG 2.2 / LBI) com uma linha de código. JavaScript puro, npm e React.">
+  <meta name="twitter:image" content="https://thaynabds.github.io/accessability-widget/demo/og-image.png">
+  <meta name="twitter:image:alt" content="AccessAbility Widget: widget de acessibilidade gratuito para sites">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://thaynabds.github.io/accessability-widget/demo/#app",
+        "name": "AccessAbility Widget",
+        "description": "Widget de acessibilidade gratuito e de código aberto para sites, com 30 recursos em conformidade com a WCAG 2.2 e a LBI 13.146/2015.",
+        "url": "https://thaynabds.github.io/accessability-widget/demo/",
+        "image": "https://thaynabds.github.io/accessability-widget/demo/og-image.png",
+        "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "Acessibilidade web",
+        "operatingSystem": "Qualquer navegador moderno",
+        "softwareVersion": "2.3.0",
+        "inLanguage": "pt-BR",
+        "isAccessibleForFree": true,
+        "license": "https://opensource.org/licenses/MIT",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+        "downloadUrl": "https://www.npmjs.com/package/@thaynabds/accessability-widget",
+        "featureList": "8 temas claros e escuros, alto contraste, filtros de daltonismo, fonte para dislexia, tamanho do texto, leitura em voz alta, guia de leitura, lupa, mapa da página, pausar animações, perfis rápidos",
+        "author": { "@type": "Person", "name": "Thayná Batista da Silva", "url": "https://github.com/thaynabds" }
+      },
+      {
+        "@type": "SoftwareSourceCode",
+        "name": "AccessAbility Widget",
+        "codeRepository": "https://github.com/thaynabds/accessability-widget",
+        "programmingLanguage": ["JavaScript", "TypeScript"],
+        "runtimePlatform": "Navegador web",
+        "license": "https://opensource.org/licenses/MIT",
+        "targetProduct": { "@id": "https://thaynabds.github.io/accessability-widget/demo/#app" },
+        "author": { "@type": "Person", "name": "Thayná Batista da Silva", "url": "https://github.com/thaynabds" }
+      }
+    ]
+  }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7ff; color: #1a1a2e; }
@@ -143,6 +202,11 @@
     </div>
     <p style="margin-top:12px;font-size:.9rem;color:#6b7280;">
       Cole antes de <code>&lt;/body&gt;</code>. O botão aparece no canto inferior direito. Nenhuma configuração necessária. Preferências salvas no <code>localStorage</code> automaticamente.
+    </p>
+    <p style="margin-top:12px;font-size:.9rem;color:#6b7280;">
+      Em projetos com npm ou React: <code>npm install @thaynabds/accessability-widget</code>
+      (<a href="https://www.npmjs.com/package/@thaynabds/accessability-widget">pacote no npm</a> ·
+      <a href="https://github.com/thaynabds/accessability-widget#readme">documentação no GitHub</a>).
     </p>
     <div class="wcag-badge">✅ Conformidade: WCAG 2.2 AA / LBI (Lei Brasileira de Inclusão 13.146/2015)</div>
   </section>

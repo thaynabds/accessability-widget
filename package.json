@@ -74,7 +74,15 @@
     "widget",
     "react",
     "dyslexia",
-    "color-blind"
+    "color-blind",
+    "accessibility-widget",
+    "web-accessibility",
+    "acessibilidade-web",
+    "wcag2",
+    "text-to-speech",
+    "high-contrast",
+    "vanilla-js",
+    "javascript"
   ],
   "author": "Thayná Batista da Silva (https://github.com/thaynabds)",
   "license": "MIT",
