@@ -95,8 +95,8 @@
 
     // ── Recursos ──
     $('a11y-btn').click();
-    $('aw-dark').click(); $('aw-contrast').click();
-    ok('filtros combinam', /invert/.test(document.body.style.filter) && /contrast\(2\.4\)/.test(document.body.style.filter));
+    $('aw-sat').click(); A11yWidget.applyPrefs({ highContrast: true });
+    ok('filtros combinam', /saturate/.test(document.body.style.filter) && /contrast\(2\.4\)/.test(document.body.style.filter));
     $('aw-links').click();
     ok('destacar links', getComputedStyle(document.querySelector('a')).backgroundColor === 'rgb(255, 243, 205)');
     $('aw-images').click();

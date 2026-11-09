@@ -1,6 +1,6 @@
 # ♿ AccessAbility Widget
 
-Botão de acessibilidade para qualquer site: modo escuro, alto contraste, fonte para dislexia, filtros para daltonismo, leitura em voz alta e mais 13 recursos. **Grátis, sem cadastro, uma linha de código.**
+Central de acessibilidade para qualquer site (botão ♿ arrastável ou Alt+A): 8 temas com perfil claro e escuro, filtros de cor, fonte para dislexia, leitura em voz alta e mais 13 recursos. **Grátis, sem cadastro, uma linha de código.**
 
 [![npm](https://img.shields.io/npm/v/@thaynabds/accessability-widget)](https://www.npmjs.com/package/@thaynabds/accessability-widget)
 [![Demo](https://img.shields.io/badge/demo-ver%20ao%20vivo-brightgreen)](https://thaynabds.github.io/accessability-widget/demo/)
@@ -23,7 +23,7 @@ Escolha **uma** opção, de acordo com o seu site.
 Cole esta linha logo antes de `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.3/src/accessability-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.2.0/src/accessability-widget.js"></script>
 ```
 
 Pronto: o botão ♿ aparece no canto inferior direito.
@@ -46,7 +46,7 @@ Crie um arquivo `teste.html`, cole o conteúdo abaixo e abra com o navegador (do
   <p>Clique no botão ♿ no canto inferior direito.</p>
   <a href="https://github.com/thaynabds/accessability-widget">Um link</a>
 
-  <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.3/src/accessability-widget.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.2.0/src/accessability-widget.js"></script>
 </body>
 </html>
 ```
@@ -137,8 +137,8 @@ As escolhas ficam salvas no navegador da pessoa (`localStorage`) e valem na pró
 | | Recurso | Ajuda quem tem |
 |---|---|---|
 | 🌙 | Modo escuro | Fotofobia, fadiga ocular |
-| 🔄 | Inverter cores | Baixa visão |
-| 🔆 | Alto contraste | Baixa visão |
+| 🔄 | Inverter cores e inversão inteligente (mantém fotos e vídeos) | Baixa visão |
+| 🌓 | Temas com perfil claro e escuro: Padrão, Alto contraste, Kuro, PinkVoid, RedVoid, YellowVoid, GreenVoid e BlueVoid | Baixa visão, fotossensibilidade |
 | 🌈 | Aumentar saturação | Baixa percepção de cores |
 | 🖼 | Ocultar imagens | Dificuldade de concentração |
 | 🎨 | Filtros para daltonismo (protanopia, deuteranopia, tritanopia, monocromia) | Daltonismo |
@@ -166,7 +166,7 @@ As escolhas ficam salvas no navegador da pessoa (`localStorage`) e valem na pró
 | Alto contraste | `filter: contrast(2.4)` |
 | Saturação | `filter: saturate(3) contrast(1.1)` |
 | Ocultar imagens | `visibility: hidden` em `img`, `picture` e `[role=img]` |
-| Daltonismo | SVG `feColorMatrix`; monocromia com `grayscale(1)` |
+| Filtros de cor | SVG `feColorMatrix` em sRGB: Daltonizer do Android (modo Correction) e monocromia pela luminância BT.709 |
 | Tamanho do texto | `font-size` no `<html>`, de 80% a 140% em passos de 10% |
 | Fonte dislexia | OpenDyslexic via jsDelivr |
 | Linhas / espaçamento | `line-height: 2.2`; `letter-spacing: .14em` e `word-spacing: .2em` |
@@ -184,10 +184,10 @@ As escolhas ficam salvas no navegador da pessoa (`localStorage`) e valem na pró
 
 ## ❓ Problemas comuns
 
-- **O botão não aparece (tag `<script>`)** — confira se a linha está **antes de `</body>`** e se a URL está completa, com `@2.1.3`.
+- **O botão não aparece (tag `<script>`)** — confira se a linha está **antes de `</body>`** e se a URL está completa, com `@2.2.0`.
 - **O botão não aparece (npm)** — pelo npm é preciso chamar `init()` ou renderizar `<AccessAbilityWidget />`.
 - **Erro no Next.js / SSR** — use `@thaynabds/accessability-widget/react`; o módulo já tem `'use client'` e não faz nada no servidor.
-- **Atualizei, mas continua a versão antiga** — use sempre a URL com versão (`@2.1.3`). Com `@latest` o jsDelivr pode demorar até 7 dias para atualizar o cache.
+- **Atualizei, mas continua a versão antiga** — use sempre a URL com versão (`@2.2.0`). Com `@latest` o jsDelivr pode demorar até 7 dias para atualizar o cache.
 
 ---
 
@@ -245,8 +245,8 @@ w.init();                                   // coloca de volta
 
 - `window.A11yWidget` é o mesmo objeto (nome antigo, mantido por compatibilidade).
 - As funções podem ser chamadas a qualquer momento, inclusive antes de a página terminar de carregar.
-- Valores inválidos em `applyPrefs` são ignorados: chaves desconhecidas, tipos errados, `fontSize` fora de -2 a 4 (-2 = 80%, 4 = 140%) ou filtro de daltonismo inexistente.
-- Preferências disponíveis: `darkMode`, `invertColors`, `highContrast`, `saturationBoost`, `colorBlind` (`none`, `protanopia`, `deuteranopia`, `tritanopia`, `monochromia`), `fontSize`, `dyslexicFont`, `lineHeight`, `textSpacing`, `highlightLinks`, `highlightHeadings`, `hideImages`, `pauseAnimations`, `pauseVideos`, `bigCursor`, `focusVisible`, `readingGuide`.
+- Valores inválidos em `applyPrefs` são ignorados: chaves desconhecidas, tipos errados, `fontSize` fora de -2 a 4 (-2 = 80%, 4 = 140%) ou tema ou filtro de cor inexistente.
+- Preferências disponíveis: `darkMode`, `invertColors`, `highContrast`, `saturationBoost`, `theme` (`default`, `light`, `dark`, ou `high_contrast`, `kuro`, `pink_void`, `red_void`, `yellow_void`, `green_void`, `blue_void`, com sufixo `_light` para o perfil claro), `colorBlind` (`none`, `smart_invert`, `protanopia`, `deuteranopia`, `tritanopia`, `monochromia`), `fontSize`, `dyslexicFont`, `lineHeight`, `textSpacing`, `highlightLinks`, `highlightHeadings`, `hideImages`, `pauseAnimations`, `pauseVideos`, `bigCursor`, `focusVisible`, `readingGuide`.
 - Tipos TypeScript incluídos no pacote npm.
 
 </details>
@@ -310,7 +310,7 @@ python3 -m http.server 5500   # demo em http://localhost:5500/demo/
 - Testes no navegador: com o servidor acima, abra `http://localhost:5500/tests/widget.test.html` (de preferência com emulação de celular no DevTools). A página mostra `WIDGET_TESTS_OK` quando tudo passa.
 - Testes da API: `cd api && ./mvnw test`.
 - A demo é publicada no GitHub Pages a cada push na `main` (`.github/workflows/pages.yml`).
-- Nova versão: atualize `version` em `package.json`, `index.cjs` e `src/accessability-widget.js`; troque a URL `@2.1.3` no README e na demo; crie a tag (`git tag v2.1.4 && git push origin v2.1.4`) e publique com `npm publish`.
+- Nova versão: atualize `version` em `package.json`, `index.cjs` e `src/accessability-widget.js`; troque a URL `@2.2.0` no README e na demo; crie a tag (`git tag v2.2.1 && git push origin v2.2.1`) e publique com `npm publish`.
 
 </details>
 

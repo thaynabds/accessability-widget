@@ -94,17 +94,17 @@ test('depois de destroy, init volta com as preferências salvas', async () => {
   win.A11yWidget.destroy();
   win.A11yWidget.init();
   assert.match(win.document.body.style.filter, /contrast\(2\.4\)/);
-  assert.equal(win.document.getElementById('aw-contrast').getAttribute('aria-pressed'), 'true');
+  assert.equal(win.document.querySelector('[data-family="high_contrast"]').getAttribute('aria-checked'), 'true');
 });
 
 test('subscribe avisa as mudanças e o retorno cancela', async () => {
   const win = await loadWidget();
   const seen = [];
-  const unsubscribe = win.A11yWidget.subscribe(p => seen.push(p.darkMode));
-  win.document.getElementById('aw-dark').click();
+  const unsubscribe = win.A11yWidget.subscribe(p => seen.push(p.saturationBoost));
+  win.document.getElementById('aw-sat').click();
   win.A11yWidget.reset();
   unsubscribe();
-  win.A11yWidget.applyPrefs({ darkMode: true });
+  win.A11yWidget.applyPrefs({ saturationBoost: true });
   assert.deepEqual(seen, [true, false]);
   assert.doesNotThrow(() => win.A11yWidget.subscribe('não é função')());
 });

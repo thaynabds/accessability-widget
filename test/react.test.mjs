@@ -70,11 +70,11 @@ test('prop prefs aplica e reaplica só quando o conteúdo muda', () => {
 test('onChange recebe as mudanças, sempre com a função mais recente', () => {
   const calls = [];
   const r = render(h(AccessAbilityWidget, { onChange: () => calls.push('antiga') }));
-  r.rerender(h(AccessAbilityWidget, { onChange: p => calls.push(p.darkMode) }));
-  act(() => { document.getElementById('aw-dark').click(); });
+  r.rerender(h(AccessAbilityWidget, { onChange: p => calls.push(p.saturationBoost) }));
+  act(() => { document.getElementById('aw-sat').click(); });
   assert.deepEqual(calls, [true]);
   r.unmount();
-  act(() => widget.applyPrefs({ darkMode: false }));
+  act(() => widget.applyPrefs({ saturationBoost: false }));
   assert.deepEqual(calls, [true], 'para de avisar depois de desmontar');
 });
 

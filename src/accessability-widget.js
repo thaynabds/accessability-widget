@@ -1,11 +1,11 @@
 /*!
  * AccessAbility Widget — Widget de Acessibilidade Universal
  * Autor: Thayná Batista da Silva — github.com/thaynabds
- * Versão: 2.1.3
+ * Versão: 2.2.0
  * Licença: MIT
  *
  * Embed (uma linha):
- * <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.3/src/accessability-widget.js"></script>
+ * <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.2.0/src/accessability-widget.js"></script>
  *
  * Conformidade: WCAG 2.2 / LBI (Lei Brasileira de Inclusão 13.146/2015)
  */
@@ -30,7 +30,8 @@
     invertColors:     false,
     highContrast:     false,
     saturationBoost:  false,
-    colorBlind:       'none',    // none | protanopia | deuteranopia | tritanopia | monochromia
+    theme:            'default', // default, light, dark ou família com sufixo _light (ver THEMES)
+    colorBlind:       'none',    // none | smart_invert | protanopia | deuteranopia | tritanopia | monochromia
     /* Tipografia */
     fontSize:         0,         // -2 a +4 (passos de 10%)
     dyslexicFont:     false,
@@ -51,7 +52,28 @@
     tts:              false,     // lê texto selecionado ao pressionar o botão
   };
 
-  const COLOR_BLIND_MODES = ['none', 'protanopia', 'deuteranopia', 'tritanopia', 'monochromia'];
+  const COLOR_BLIND_MODES = ['none', 'smart_invert', 'protanopia', 'deuteranopia', 'tritanopia', 'monochromia'];
+
+  // Paletas do Congo Grey Parrot. accent e onAccent vêm dos temas do app Android.
+  const THEMES = {
+    light:         { bg: '#f4f7f5', surface: '#ffffff', text: '#1c2420', accent: '#1b6b45', onAccent: '#ffffff', border: '#d5e4dc' },
+    dark:          { bg: '#121816', surface: '#1b2621', text: '#eef5f1', accent: '#8fd4b4', onAccent: '#052117', border: '#2a3b34' },
+    high_contrast: { bg: '#000000', surface: '#000000', text: '#ffffff', accent: '#ffff00', onAccent: '#000000', border: '#ffff00' },
+    kuro:          { bg: '#100e16', surface: '#1c1730', text: '#f4eefe', accent: '#b794f6', onAccent: '#1a1030', border: '#3a2d58' },
+    pink_void:     { bg: '#160e12', surface: '#2a1520', text: '#fbeff4', accent: '#e56aa3', onAccent: '#2a1020', border: '#5a3048' },
+    red_void:      { bg: '#160e0e', surface: '#2a1515', text: '#fbeeee', accent: '#e26464', onAccent: '#2a1010', border: '#5a3030' },
+    yellow_void:   { bg: '#14120c', surface: '#262014', text: '#fbf6e8', accent: '#e6c200', onAccent: '#1a1404', border: '#5a4c28' },
+    green_void:    { bg: '#0c140e', surface: '#142a1a', text: '#eefbf1', accent: '#5fd08a', onAccent: '#04210f', border: '#2c5a3a' },
+    blue_void:     { bg: '#0c1016', surface: '#14202f', text: '#eef4fb', accent: '#6aa8e5', onAccent: '#0c1b2a', border: '#2f4a66' },
+    high_contrast_light: { bg: '#ffffff', surface: '#ffffff', text: '#000000', accent: '#0000ff', onAccent: '#ffffff', border: '#0000ff' },
+    kuro_light:          { bg: '#f5f1fd', surface: '#ffffff', text: '#1f1833', accent: '#5534a8', onAccent: '#ffffff', border: '#d9cdf0' },
+    pink_void_light:     { bg: '#fdf1f6', surface: '#ffffff', text: '#2f1420', accent: '#9a2864', onAccent: '#ffffff', border: '#f0cfde' },
+    red_void_light:      { bg: '#fdf1f1', surface: '#ffffff', text: '#2f1414', accent: '#8e2424', onAccent: '#ffffff', border: '#f0cfcf' },
+    yellow_void_light:   { bg: '#fdf8e6', surface: '#ffffff', text: '#2b2408', accent: '#6b5600', onAccent: '#ffffff', border: '#ecdfae' },
+    green_void_light:    { bg: '#effaf1', surface: '#ffffff', text: '#12291a', accent: '#1a6b35', onAccent: '#ffffff', border: '#c6e8d0' },
+    blue_void_light:     { bg: '#eff5fd', surface: '#ffffff', text: '#12203a', accent: '#1f55a8', onAccent: '#ffffff', border: '#c8d9f2' },
+  };
+  const THEME_NAMES = ['default'].concat(Object.keys(THEMES));
 
   // Aceita só chaves conhecidas, com o tipo certo e dentro dos limites.
   // Protege contra localStorage adulterado e contra applyPrefs com dados
@@ -64,6 +86,8 @@
       const v = raw[key];
       if (key === 'colorBlind') {
         if (COLOR_BLIND_MODES.indexOf(v) !== -1) out[key] = v;
+      } else if (key === 'theme') {
+        if (THEME_NAMES.indexOf(v) !== -1) out[key] = v;
       } else if (key === 'fontSize') {
         if (typeof v === 'number' && isFinite(v)) out[key] = clamp(Math.round(v), -2, 4);
       } else if (typeof v === 'boolean') {
@@ -132,7 +156,8 @@
       position: fixed; bottom: 24px; right: 24px;
       z-index: var(--aw-z);
       width: 54px; height: 54px; border-radius: 50%;
-      background: var(--aw-primary); color: #fff;
+      background: var(--aw-primary); color: var(--aw-active-text);
+      font-size: 28px; line-height: 1;
       border: none; cursor: grab;
       box-shadow: 0 4px 20px var(--aw-shadow);
       display: flex; align-items: center; justify-content: center;
@@ -144,7 +169,7 @@
     #a11y-btn:focus-visible { outline: 3px solid #ffcc00; outline-offset: 3px; }
     #a11y-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px var(--aw-shadow); }
     #a11y-btn[aria-expanded="true"] { background: var(--aw-primary-dark); }
-    #a11y-btn svg { pointer-events: none; }
+    #a11y-btn span { pointer-events: none; }
 
     /* ── Painel ── */
     #a11y-panel {
@@ -171,14 +196,14 @@
 
     /* ── Header do painel ── */
     .aw-header {
-      background: var(--aw-primary); color: #fff;
+      background: var(--aw-primary); color: var(--aw-active-text);
       padding: 13px 16px; font-weight: 700; font-size: 13px;
       letter-spacing: .4px; display: flex; align-items: center;
       justify-content: space-between; flex-shrink: 0;
     }
     .aw-header-title { display: flex; align-items: center; gap: 8px; }
     .aw-close-btn {
-      background: rgba(255,255,255,.15); border: none; color: #fff;
+      background: rgba(255,255,255,.15); border: none; color: var(--aw-active-text);
       width: 26px; height: 26px; border-radius: 50%;
       cursor: pointer; font-size: 16px; line-height: 1;
       display: flex; align-items: center; justify-content: center;
@@ -294,13 +319,35 @@
       filter: invert(1) hue-rotate(180deg) !important;
     }
 
-    /* Inversão de cores pura — preserva imagens/vídeos */
-    body.aw-invert img,
-    body.aw-invert video,
-    body.aw-invert iframe { filter: invert(1) !important; }
-    body.aw-dark-mode.aw-invert img,
-    body.aw-dark-mode.aw-invert video,
-    body.aw-dark-mode.aw-invert iframe { filter: hue-rotate(180deg) !important; }
+    /* Inversão inteligente — inverte a interface e mantém fotos e vídeos */
+    body.aw-smart-invert img,
+    body.aw-smart-invert video,
+    body.aw-smart-invert iframe,
+    body.aw-smart-invert canvas,
+    body.aw-smart-invert svg { filter: invert(1) !important; }
+    body.aw-dark-mode.aw-smart-invert img,
+    body.aw-dark-mode.aw-smart-invert video,
+    body.aw-dark-mode.aw-smart-invert iframe,
+    body.aw-dark-mode.aw-smart-invert canvas,
+    body.aw-dark-mode.aw-smart-invert svg { filter: hue-rotate(180deg) !important; }
+
+    html.aw-themed #aw-reset { color: var(--aw-text); }
+    html.aw-themed #aw-reset:hover { background: var(--aw-hover); }
+
+    /* Temas — :where mantém a especificidade baixa para os destaques vencerem */
+    html.aw-themed, html.aw-themed body { background: var(--aw-page-bg) !important; color: var(--aw-text) !important; }
+    body.aw-themed :where(*:not(img, video, canvas, svg, svg *, picture, iframe, [role="img"])) {
+      background-color: transparent !important;
+      background-image: none !important;
+      color: var(--aw-text) !important;
+      border-color: var(--aw-border) !important;
+      text-shadow: none !important;
+    }
+    body.aw-themed a, body.aw-themed a:visited { color: var(--aw-accent) !important; }
+    body.aw-themed button, body.aw-themed input, body.aw-themed select, body.aw-themed textarea,
+    body.aw-themed pre, body.aw-themed code, body.aw-themed [role="button"] {
+      background-color: var(--aw-surface) !important;
+    }
 
     /* Fonte dislexia */
     body.aw-dyslexic *,
@@ -367,6 +414,16 @@
       border-radius: 0 4px 4px 0 !important;
     }
 
+    body.aw-themed.aw-highlight-headings h1,
+    body.aw-themed.aw-highlight-headings h2,
+    body.aw-themed.aw-highlight-headings h3,
+    body.aw-themed.aw-highlight-headings h4,
+    body.aw-themed.aw-highlight-headings h5,
+    body.aw-themed.aw-highlight-headings h6 {
+      background-color: var(--aw-surface) !important;
+      border-left-color: var(--aw-accent) !important;
+    }
+
     /* Ocultar imagens */
     body.aw-hide-images img,
     body.aw-hide-images [role="img"],
@@ -396,30 +453,40 @@
     }
   `;
 
+  // Protanopia, deuteranopia e tritanopia: Daltonizer do Android, modo Correction.
+  // https://android.googlesource.com/platform/frameworks/native/+/refs/heads/master/services/surfaceflinger/Effects/Daltonizer.cpp
+  // Monocromia: luminância da Rec. ITU-R BT.709.
   const COLOR_FILTERS_SVG = `
     <svg class="aw-svg-filter" aria-hidden="true" focusable="false"
          xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <filter id="aw-f-protanopia">
+        <filter id="aw-f-protanopia" color-interpolation-filters="sRGB">
           <feColorMatrix type="matrix"
-            values="0.567 0.433 0     0 0
-                    0.558 0.442 0     0 0
-                    0     0.242 0.758 0 0
-                    0     0     0     1 0"/>
+            values="0.46111 0.53889 0 0 0
+                    0.37754 0.62246 0 0 0
+                    0.30974 -0.30974 1 0 0
+                    0 0 0 1 0"/>
         </filter>
-        <filter id="aw-f-deuteranopia">
+        <filter id="aw-f-deuteranopia" color-interpolation-filters="sRGB">
           <feColorMatrix type="matrix"
-            values="0.625 0.375 0   0 0
-                    0.7   0.3   0   0 0
-                    0     0.3   0.7 0 0
-                    0     0     0   1 0"/>
+            values="-0.01672 1.01672 0 0 0
+                    0.07530 0.92470 0 0 0
+                    -0.36845 0.36845 1 0 0
+                    0 0 0 1 0"/>
         </filter>
-        <filter id="aw-f-tritanopia">
+        <filter id="aw-f-tritanopia" color-interpolation-filters="sRGB">
           <feColorMatrix type="matrix"
-            values="0.95  0.05  0     0 0
-                    0     0.433 0.567 0 0
-                    0     0.475 0.525 0 0
-                    0     0     0     1 0"/>
+            values="1 -1.15102 1.15102 0 0
+                    0 0.11263 0.88737 0 0
+                    0 0.14975 0.85025 0 0
+                    0 0 0 1 0"/>
+        </filter>
+        <filter id="aw-f-monochromia" color-interpolation-filters="sRGB">
+          <feColorMatrix type="matrix"
+            values="0.2126 0.7152 0.0722 0 0
+                    0.2126 0.7152 0.0722 0 0
+                    0.2126 0.7152 0.0722 0 0
+                    0 0 0 1 0"/>
         </filter>
       </defs>
     </svg>
@@ -430,41 +497,49 @@
     return `
       <button id="a11y-btn"
         aria-expanded="false" aria-haspopup="dialog"
-        aria-label="Abrir painel de acessibilidade"
+        aria-label="Abrir central de acessibilidade"
         title="Acessibilidade (Alt+A)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2.2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="5" r="1.8"/>
-          <path d="M7 9h10M12 9v5l-2.5 4M12 14l2.5 4"/>
-        </svg>
+        <span aria-hidden="true">♿&#xFE0E;</span>
       </button>
 
       <div id="a11y-panel" role="dialog"
-           aria-label="Painel de acessibilidade" aria-modal="false">
+           aria-label="Central de acessibilidade" aria-modal="false">
 
         <div class="aw-header">
           <span class="aw-header-title">
-            <span aria-hidden="true">♿</span> Acessibilidade
+            <span aria-hidden="true">♿</span> Central de acessibilidade
           </span>
           <button class="aw-close-btn" id="aw-close" aria-label="Fechar painel">✕</button>
         </div>
 
         <div class="aw-body">
 
+          <!-- TEMAS -->
+          <div class="aw-section-label">Tema</div>
+          <div class="aw-chips" id="aw-chips-theme" role="radiogroup" aria-label="Tema">
+            ${[['default','Original'],['base','Padrão'],['high_contrast','Alto contraste'],['kuro','Kuro'],
+               ['pink_void','PinkVoid'],['red_void','RedVoid'],['yellow_void','YellowVoid'],
+               ['green_void','GreenVoid'],['blue_void','BlueVoid']]
+              .map(([id, name]) => `<span class="aw-chip" role="radio" tabindex="0" data-family="${id}">${name}</span>`).join('')}
+          </div>
+          <div class="aw-section-label">Perfil do tema</div>
+          <div class="aw-chips" id="aw-chips-profile" role="radiogroup" aria-label="Perfil do tema">
+            <span class="aw-chip" role="radio" tabindex="0" data-profile="light">Claro</span>
+            <span class="aw-chip" role="radio" tabindex="0" data-profile="dark">Escuro</span>
+          </div>
+
           <!-- VISUAL -->
           <div class="aw-section-label">Visão</div>
 
-          ${row('aw-dark',     '🌙', 'Modo escuro')}
-          ${row('aw-invert',   '🔄', 'Inverter cores')}
-          ${row('aw-contrast', '🔆', 'Alto contraste')}
           ${row('aw-sat',      '🌈', 'Aumentar saturação')}
           ${row('aw-images',   '🖼',  'Ocultar imagens')}
 
-          <!-- DALTONISMO -->
-          <div class="aw-section-label">Daltonismo</div>
-          <div class="aw-chips" id="aw-chips-cb" role="radiogroup" aria-label="Filtro de daltonismo">
-            <span class="aw-chip" role="radio" tabindex="0" data-cb="none">Normal</span>
+          <!-- FILTROS DE COR -->
+          <div class="aw-section-label">Filtros de cor</div>
+          <div class="aw-chips" id="aw-chips-cb" role="radiogroup" aria-label="Filtro de cor">
+            <span class="aw-chip" role="radio" tabindex="0" data-cb="none">Nenhum</span>
+            <span class="aw-chip" role="radio" tabindex="0" data-cb="invert">Inverter</span>
+            <span class="aw-chip" role="radio" tabindex="0" data-cb="smart_invert">Inversão inteligente</span>
             <span class="aw-chip" role="radio" tabindex="0" data-cb="protanopia">Protanopia</span>
             <span class="aw-chip" role="radio" tabindex="0" data-cb="deuteranopia">Deuteranopia</span>
             <span class="aw-chip" role="radio" tabindex="0" data-cb="tritanopia">Tritanopia</span>
@@ -584,17 +659,73 @@
       root.classList.toggle('aw-big-cursor', !!prefs.bigCursor);
       root.classList.toggle('aw-focus-visible', !!prefs.focusVisible);
     }
+    b.classList.toggle('aw-smart-invert', prefs.colorBlind === 'smart_invert');
+    applyTheme();
     applyFilters();
     applyFontSize();
     applyVideos();
     applyReadingGuide();
   }
 
+  // Os valores vêm só de THEMES; prefs.theme já passou pela lista permitida.
+  const THEME_VARS = {
+    '--aw-page-bg': 'bg', '--aw-surface': 'surface', '--aw-accent': 'accent',
+    '--aw-primary': 'accent', '--aw-primary-dark': 'accent', '--aw-active': 'accent',
+    '--aw-active-text': 'onAccent', '--aw-bg': 'surface', '--aw-text': 'text',
+    '--aw-border': 'border', '--aw-hover': 'bg',
+  };
+
+  // O nome salvo junta família e perfil: kuro (escuro), kuro_light (claro).
+  function themeParts(theme) {
+    if (theme === 'default') return { family: 'default', profile: null };
+    if (theme === 'light' || theme === 'dark') return { family: 'base', profile: theme };
+    if (theme.endsWith('_light')) return { family: theme.slice(0, -6), profile: 'light' };
+    return { family: theme, profile: 'dark' };
+  }
+
+  function themeName(family, profile) {
+    if (family === 'default') return 'default';
+    if (family === 'base') return profile;
+    return profile === 'light' ? family + '_light' : family;
+  }
+
+  function activeThemeName() {
+    if (prefs.theme !== 'default') return prefs.theme;
+    return prefs.highContrast ? 'high_contrast' : prefs.darkMode ? 'dark' : 'default';
+  }
+
+  function chooseTheme(family, profile) {
+    const current = themeParts(activeThemeName());
+    const nextFamily = family || (current.family === 'default' ? 'base' : current.family);
+    const nextProfile = profile || current.profile || (nextFamily === 'base' ? 'light' : 'dark');
+    prefs.theme = themeName(nextFamily, nextProfile);
+    prefs.darkMode = false;
+    prefs.highContrast = false;
+  }
+
+  function clearTheme() {
+    const html = document.documentElement;
+    Object.keys(THEME_VARS).forEach(name => html.style.removeProperty(name));
+    html.classList.remove('aw-themed');
+    if (document.body) document.body.classList.remove('aw-themed');
+  }
+
+  function applyTheme() {
+    const theme = prefs.theme === 'default' ? null : THEMES[prefs.theme];
+    clearTheme();
+    if (!theme) return;
+    const html = document.documentElement;
+    Object.entries(THEME_VARS).forEach(([name, field]) => html.style.setProperty(name, theme[field]));
+    html.classList.add('aw-themed');
+    document.body.classList.add('aw-themed');
+  }
+
   const CB_FILTERS = {
     protanopia:   "url('#aw-f-protanopia')",
     deuteranopia: "url('#aw-f-deuteranopia')",
     tritanopia:   "url('#aw-f-tritanopia')",
-    monochromia:  'grayscale(1)',
+    monochromia:  "url('#aw-f-monochromia')",
+    smart_invert: 'invert(1)',
   };
 
   // Combina todos os filtros ativos num único `filter` no body. O widget fica
@@ -638,9 +769,6 @@
 
   // ─── Sincroniza a UI com prefs ─────────────────────────────────────────────
   const ROW_KEY_MAP = {
-    'aw-dark':     'darkMode',
-    'aw-invert':   'invertColors',
-    'aw-contrast': 'highContrast',
     'aw-sat':      'saturationBoost',
     'aw-images':   'hideImages',
     'aw-dyslexic': 'dyslexicFont',
@@ -664,8 +792,12 @@
       if (chk)   chk.checked = val;
     });
 
+    const active = themeParts(activeThemeName());
+    const activeFilter = prefs.invertColors ? 'invert' : prefs.colorBlind;
     document.querySelectorAll('.aw-chip').forEach(chip => {
-      const on = chip.dataset.cb === prefs.colorBlind;
+      const on = chip.dataset.family ? chip.dataset.family === active.family
+        : chip.dataset.profile ? chip.dataset.profile === active.profile
+        : chip.dataset.cb === activeFilter;
       chip.classList.toggle('active', on);
       chip.setAttribute('aria-checked', String(on));
     });
@@ -1039,10 +1171,15 @@
       if (prefs.fontSize > -2) { prefs.fontSize--; savePrefs(); applyAll(); syncUI(); }
     });
 
-    // Chips daltonismo
+    // Chips de tema e de filtro: uma escolha por grupo
     document.querySelectorAll('.aw-chip').forEach(chip => {
       chip.addEventListener('click', () => {
-        prefs.colorBlind = chip.dataset.cb;
+        if (chip.dataset.family || chip.dataset.profile) {
+          chooseTheme(chip.dataset.family, chip.dataset.profile);
+        } else {
+          prefs.invertColors = chip.dataset.cb === 'invert';
+          prefs.colorBlind = prefs.invertColors ? 'none' : chip.dataset.cb;
+        }
         savePrefs(); applyAll(); syncUI();
       });
       chip.addEventListener('keydown', e => {
@@ -1091,7 +1228,7 @@
     initReadingGuide();
     bindKeyShortcut();
     initDraggable();
-    console.info('[AccessAbility Widget v2.1.3] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
+    console.info('[AccessAbility Widget v2.2.0] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
   }
 
   // Remove o widget e desfaz todos os efeitos na página. As preferências
@@ -1110,6 +1247,8 @@
       Object.values(CLASS_MAP).forEach(cls => document.body.classList.remove(cls));
       document.body.style.removeProperty('filter');
     }
+    clearTheme();
+    if (document.body) document.body.classList.remove('aw-smart-invert');
     document.documentElement.style.fontSize = '';
   }
 
@@ -1148,7 +1287,7 @@
 
   window.A11yWidget = {
     __core:     true,
-    version:    '2.1.3',
+    version:    '2.2.0',
     init:       () => { ensureReady(); },
     destroy:    destroy,
     isMounted:  () => !!document.getElementById(WIDGET_ID),
@@ -1159,7 +1298,11 @@
     },
     getPrefs:   () => Object.assign({}, prefs),
     applyPrefs: (p) => {
-      Object.assign(prefs, sanitizePrefs(p)); savePrefs();
+      const clean = sanitizePrefs(p);
+      Object.assign(prefs, clean);
+      // Tema e os antigos modo escuro/alto contraste somariam dois efeitos.
+      if (clean.theme && clean.theme !== 'default') { prefs.darkMode = false; prefs.highContrast = false; }
+      savePrefs();
       if (ensureReady()) { applyAll(); syncUI(); }
     },
     reset:      () => { ensureReady(); resetAll(); },

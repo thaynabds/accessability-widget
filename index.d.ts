@@ -1,10 +1,12 @@
-export type ColorBlindMode = 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'monochromia';
+export type ThemeName = 'default' | 'light' | 'dark' | 'high_contrast' | 'high_contrast_light' | 'kuro' | 'kuro_light' | 'pink_void' | 'pink_void_light' | 'red_void' | 'red_void_light' | 'yellow_void' | 'yellow_void_light' | 'green_void' | 'green_void_light' | 'blue_void' | 'blue_void_light';
+export type ColorBlindMode = 'none' | 'smart_invert' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'monochromia';
 
 export interface A11yPrefs {
   darkMode: boolean;
   invertColors: boolean;
   highContrast: boolean;
   saturationBoost: boolean;
+  theme: ThemeName;
   colorBlind: ColorBlindMode;
   /** De -2 (80%) a 4 (140%), em passos de 10%. */
   fontSize: number;

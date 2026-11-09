@@ -1,6 +1,6 @@
 import type { A11yPrefs } from '../index.mjs';
 
-export type { A11yPrefs, ColorBlindMode } from '../index.mjs';
+export type { A11yPrefs, ColorBlindMode, ThemeName } from '../index.mjs';
 
 export interface AccessAbilityWidgetProps {
   /** Preferências a aplicar; reaplicadas quando o conteúdo muda. */
