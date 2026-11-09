@@ -23,7 +23,7 @@ Escolha **uma** opção, de acordo com o seu site.
 Cole esta linha logo antes de `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.2/src/accessability-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.3/src/accessability-widget.js"></script>
 ```
 
 Pronto: o botão ♿ aparece no canto inferior direito.
@@ -46,7 +46,7 @@ Crie um arquivo `teste.html`, cole o conteúdo abaixo e abra com o navegador (do
   <p>Clique no botão ♿ no canto inferior direito.</p>
   <a href="https://github.com/thaynabds/accessability-widget">Um link</a>
 
-  <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.2/src/accessability-widget.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.3/src/accessability-widget.js"></script>
 </body>
 </html>
 ```
@@ -184,10 +184,10 @@ As escolhas ficam salvas no navegador da pessoa (`localStorage`) e valem na pró
 
 ## ❓ Problemas comuns
 
-- **O botão não aparece (tag `<script>`)** — confira se a linha está **antes de `</body>`** e se a URL está completa, com `@2.1.2`.
+- **O botão não aparece (tag `<script>`)** — confira se a linha está **antes de `</body>`** e se a URL está completa, com `@2.1.3`.
 - **O botão não aparece (npm)** — pelo npm é preciso chamar `init()` ou renderizar `<AccessAbilityWidget />`.
 - **Erro no Next.js / SSR** — use `@thaynabds/accessability-widget/react`; o módulo já tem `'use client'` e não faz nada no servidor.
-- **Atualizei, mas continua a versão antiga** — use sempre a URL com versão (`@2.1.2`). Com `@latest` o jsDelivr pode demorar até 7 dias para atualizar o cache.
+- **Atualizei, mas continua a versão antiga** — use sempre a URL com versão (`@2.1.3`). Com `@latest` o jsDelivr pode demorar até 7 dias para atualizar o cache.
 
 ---
 
@@ -310,7 +310,7 @@ python3 -m http.server 5500   # demo em http://localhost:5500/demo/
 - Testes no navegador: com o servidor acima, abra `http://localhost:5500/tests/widget.test.html` (de preferência com emulação de celular no DevTools). A página mostra `WIDGET_TESTS_OK` quando tudo passa.
 - Testes da API: `cd api && ./mvnw test`.
 - A demo é publicada no GitHub Pages a cada push na `main` (`.github/workflows/pages.yml`).
-- Nova versão: atualize `version` em `package.json`, `index.cjs` e `src/accessability-widget.js`; troque a URL `@2.1.2` no README e na demo; crie a tag (`git tag v2.1.3 && git push origin v2.1.3`) e publique com `npm publish`.
+- Nova versão: atualize `version` em `package.json`, `index.cjs` e `src/accessability-widget.js`; troque a URL `@2.1.3` no README e na demo; crie a tag (`git tag v2.1.4 && git push origin v2.1.4`) e publique com `npm publish`.
 
 </details>
 

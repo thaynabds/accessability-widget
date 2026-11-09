@@ -1,11 +1,11 @@
 /*!
  * AccessAbility Widget — Widget de Acessibilidade Universal
  * Autor: Thayná Batista da Silva — github.com/thaynabds
- * Versão: 2.1.2
+ * Versão: 2.1.3
  * Licença: MIT
  *
  * Embed (uma linha):
- * <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.2/src/accessability-widget.js"></script>
+ * <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.1.3/src/accessability-widget.js"></script>
  *
  * Conformidade: WCAG 2.2 / LBI (Lei Brasileira de Inclusão 13.146/2015)
  */
@@ -75,6 +75,8 @@
 
   let prefs = Object.assign({}, defaults, sanitizePrefs(loadPrefs()));
   let speechActive = false;
+  let ttsSession = null;
+  let lastSelection = '';
 
   // ─── Persistência ──────────────────────────────────────────────────────────
   function loadPrefs() {
@@ -262,6 +264,7 @@
     }
     .aw-tts-btn:hover { background: var(--aw-border); }
     .aw-tts-btn.speaking { background: #fff3cd; border-color: #d69e2e; color: #7b5c00; }
+    .aw-tts-status { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--aw-text); }
 
     /* ── Botão reset ── */
     #aw-reset {
@@ -518,6 +521,7 @@
             <span aria-hidden="true">🔊</span>
             <span id="aw-tts-label">Ler texto selecionado</span>
           </button>
+          <p class="aw-tts-status" id="aw-tts-status" role="status"></p>
 
           <button id="aw-reset" aria-label="Restaurar todas as configurações padrão">
             ↺ Restaurar padrões
@@ -688,31 +692,122 @@
   }
 
   // ─── Text-to-Speech ────────────────────────────────────────────────────────
+  const TTS_CHUNK_MAX   = 180;   // o Chrome corta falas longas; o Android recusa textos grandes
+  const TTS_START_LIMIT = 6000;  // sem motor de voz, alguns navegadores nunca respondem
+  const TTS_NO_VOICE    = 'Não foi possível ler: este navegador ou sistema não tem voz disponível. Instale uma voz ou tente outro navegador.';
+
+  function setTtsStatus(message) {
+    const status = document.getElementById('aw-tts-status');
+    if (status) status.textContent = message;
+  }
+
+  function splitForSpeech(text) {
+    const chunks = [];
+    let rest = text.replace(/\s+/g, ' ').trim();
+    while (rest.length > TTS_CHUNK_MAX) {
+      const head = rest.slice(0, TTS_CHUNK_MAX);
+      let cut = Math.max(head.lastIndexOf('. '), head.lastIndexOf('! '), head.lastIndexOf('? ')) + 1;
+      if (cut < TTS_CHUNK_MAX / 2) cut = head.lastIndexOf(' ');
+      if (cut <= 0) cut = TTS_CHUNK_MAX;
+      chunks.push(rest.slice(0, cut).trim());
+      rest = rest.slice(cut).trim();
+    }
+    if (rest) chunks.push(rest);
+    return chunks;
+  }
+
+  function pickVoice(lang) {
+    const wanted = lang.toLowerCase().replace('_', '-');
+    const base = wanted.split('-')[0];
+    const normalized = (voice) => voice.lang.toLowerCase().replace('_', '-');
+    const voices = window.speechSynthesis.getVoices();
+    return voices.find(v => normalized(v) === wanted)
+      || voices.find(v => normalized(v).split('-')[0] === base)
+      || null;
+  }
+
+  function finishSpeech(message) {
+    if (ttsSession) clearTimeout(ttsSession.watchdog);
+    ttsSession = null;
+    speechActive = false;
+    updateTtsBtn();
+    setTtsStatus(message || '');
+  }
+
+  function stopSpeech() {
+    finishSpeech();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  function speakNextChunk(session) {
+    if (session !== ttsSession) return;
+    if (session.index >= session.chunks.length) { finishSpeech(); return; }
+
+    const utter = new SpeechSynthesisUtterance(session.chunks[session.index++]);
+    utter.lang = session.lang;
+    if (session.voice) utter.voice = session.voice;
+    session.utter = utter;  // mantém a referência: o Chrome perde os eventos sem ela
+
+    utter.onstart = () => { clearTimeout(session.watchdog); };
+    utter.onend = () => { clearTimeout(session.watchdog); speakNextChunk(session); };
+    utter.onerror = (event) => {
+      if (session !== ttsSession) return;
+      if (event.error === 'canceled' || event.error === 'interrupted') { finishSpeech(); return; }
+      finishSpeech(event.error === 'not-allowed'
+        ? 'O navegador bloqueou a leitura em voz alta nesta página.'
+        : TTS_NO_VOICE);
+    };
+
+    clearTimeout(session.watchdog);
+    session.watchdog = setTimeout(() => {
+      if (session !== ttsSession) return;
+      finishSpeech(TTS_NO_VOICE);
+      window.speechSynthesis.cancel();
+    }, TTS_START_LIMIT);
+    window.speechSynthesis.speak(utter);
+  }
+
   function speakSelection() {
     if (!('speechSynthesis' in window)) {
-      alert('Seu navegador não suporta leitura em voz alta.');
+      setTtsStatus('Seu navegador não suporta leitura em voz alta.');
       return;
     }
-    if (speechActive) {
-      window.speechSynthesis.cancel();
-      speechActive = false;
-      updateTtsBtn();
-      return;
-    }
-    const text = window.getSelection().toString().trim();
+    if (speechActive) { stopSpeech(); return; }
+
+    const text = window.getSelection().toString().trim() || lastSelection;
     if (!text) {
-      alert('Selecione um texto na página para ler em voz alta.');
+      setTtsStatus('Selecione um texto na página para ler em voz alta.');
       return;
     }
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = document.documentElement.lang || 'pt-BR';
-    utter.onend = utter.onerror = () => {
-      speechActive = false;
-      updateTtsBtn();
-    };
-    window.speechSynthesis.speak(utter);
+
+    // Uma fala anterior travada bloquearia a fila inteira.
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
+
+    const lang = document.documentElement.lang || 'pt-BR';
+    ttsSession = { chunks: splitForSpeech(text), index: 0, lang, voice: pickVoice(lang), utter: null, watchdog: null };
     speechActive = true;
     updateTtsBtn();
+    setTtsStatus('');
+    speakNextChunk(ttsSession);
+  }
+
+  // No celular, tocar no botão ou no painel desfaz a seleção antes do clique.
+  // Guarda o último trecho selecionado na página e esquece ao tocar fora do widget.
+  function bindSelectionMemory() {
+    const insideWidget = (node) => {
+      const root = document.getElementById(WIDGET_ID);
+      return !!(root && node && root.contains(node));
+    };
+    on(document, 'pointerdown', (event) => {
+      if (!insideWidget(event.target)) lastSelection = '';
+    }, true);
+    on(document, 'selectionchange', () => {
+      const selection = window.getSelection();
+      if (!selection || insideWidget(selection.anchorNode)) return;
+      const text = selection.toString().trim();
+      if (text) lastSelection = text;
+    });
   }
 
   function updateTtsBtn() {
@@ -957,6 +1052,7 @@
 
     // TTS
     document.getElementById('aw-tts-btn').addEventListener('click', speakSelection);
+    bindSelectionMemory();
 
     // Reset
     document.getElementById('aw-reset').addEventListener('click', resetAll);
@@ -995,7 +1091,7 @@
     initReadingGuide();
     bindKeyShortcut();
     initDraggable();
-    console.info('[AccessAbility Widget v2.1.2] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
+    console.info('[AccessAbility Widget v2.1.3] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
   }
 
   // Remove o widget e desfaz todos os efeitos na página. As preferências
@@ -1004,8 +1100,8 @@
     globalListeners.forEach(([target, type, fn, opts]) => target.removeEventListener(type, fn, opts));
     globalListeners = [];
     if (videoObserver) { videoObserver.disconnect(); videoObserver = null; }
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    speechActive = false;
+    stopSpeech();
+    lastSelection = '';
     const root = document.getElementById(WIDGET_ID);
     if (root) root.remove();
     const style = document.getElementById(STYLE_ID);
@@ -1029,8 +1125,7 @@
 
   // ─── API pública ───────────────────────────────────────────────────────────
   function resetAll() {
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    speechActive = false;
+    stopSpeech();
     prefs = Object.assign({}, defaults);
     savePrefs();
     if (document.body) { applyAll(); syncUI(); }
@@ -1053,7 +1148,7 @@
 
   window.A11yWidget = {
     __core:     true,
-    version:    '2.1.2',
+    version:    '2.1.3',
     init:       () => { ensureReady(); },
     destroy:    destroy,
     isMounted:  () => !!document.getElementById(WIDGET_ID),
