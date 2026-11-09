@@ -1,6 +1,6 @@
 # ♿ AccessAbility Widget
 
-Central de acessibilidade para qualquer site (botão ♿ arrastável ou Alt+A): 8 temas com perfil claro e escuro, filtros de cor, fonte para dislexia, leitura em voz alta e mais 13 recursos. **Grátis, sem cadastro, uma linha de código.**
+Central de acessibilidade para qualquer site (botão ♿ arrastável ou Alt+A): 8 temas com perfil claro e escuro, filtros de cor, fonte para dislexia, leitura em voz alta, perfis rápidos e muito mais: 30 recursos ao todo. **Grátis, sem cadastro, uma linha de código.**
 
 [![npm](https://img.shields.io/npm/v/@thaynabds/accessability-widget)](https://www.npmjs.com/package/@thaynabds/accessability-widget)
 [![Demo](https://img.shields.io/badge/demo-ver%20ao%20vivo-brightgreen)](https://thaynabds.github.io/accessability-widget/demo/)
@@ -23,7 +23,7 @@ Escolha **uma** opção, de acordo com o seu site.
 Cole esta linha logo antes de `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.2.0/src/accessability-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.3.0/src/accessability-widget.js"></script>
 ```
 
 Pronto: o botão ♿ aparece no canto inferior direito.
@@ -46,7 +46,7 @@ Crie um arquivo `teste.html`, cole o conteúdo abaixo e abra com o navegador (do
   <p>Clique no botão ♿ no canto inferior direito.</p>
   <a href="https://github.com/thaynabds/accessability-widget">Um link</a>
 
-  <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.2.0/src/accessability-widget.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.3.0/src/accessability-widget.js"></script>
 </body>
 </html>
 ```
@@ -142,10 +142,20 @@ As escolhas ficam salvas no navegador da pessoa (`localStorage`) e valem na pró
 | 🌈 | Aumentar saturação | Baixa percepção de cores |
 | 🖼 | Ocultar imagens | Dificuldade de concentração |
 | 🎨 | Filtros para daltonismo (protanopia, deuteranopia, tritanopia, monocromia) | Daltonismo |
+| ⚡ | Perfis rápidos: baixa visão, dislexia, TDAH, motora e sensível a estímulos | Quem quer ajustar tudo de uma vez |
 | 🔤 | Tamanho do texto (80% a 140%) | Baixa visão, idosos |
 | 📖 | Fonte para dislexia (OpenDyslexic) | Dislexia |
 | ↕ | Mais espaço entre linhas | Dislexia, TDAH |
 | ↔ | Mais espaço entre letras e palavras | Dislexia |
+| ⬅ | Alinhar texto à esquerda | Dislexia |
+| 📐 | Limitar a largura do texto a 70 caracteres | Dislexia, baixa visão |
+| 🔍 | Lupa de texto ao passar o mouse ou focar | Baixa visão |
+| 🏷 | Mostrar a descrição das imagens e avisar quando faltar | Baixa visão, deficiência cognitiva |
+| 🗺 | Mapa da página com títulos e atalho para o conteúdo | Teclado, leitores de tela |
+| 👆 | Áreas de clique de pelo menos 44px | Deficiência motora |
+| 🔇 | Silenciar sons da página | Autismo, sensibilidade a sons |
+| 💬 | Ativar legendas dos vídeos que têm faixa de legenda | Surdez, baixa audição |
+| 📄 | Ler a página inteira, com velocidade de 0,75x a 1,5x | Cegueira, dislexia |
 | 🔗 | Destacar links | Baixa visão, deficiência cognitiva |
 | 📑 | Destacar títulos | Quem lê por escaneamento |
 | ⏸ | Pausar animações | Epilepsia, TDAH, vertigem |
@@ -184,10 +194,10 @@ As escolhas ficam salvas no navegador da pessoa (`localStorage`) e valem na pró
 
 ## ❓ Problemas comuns
 
-- **O botão não aparece (tag `<script>`)** — confira se a linha está **antes de `</body>`** e se a URL está completa, com `@2.2.0`.
+- **O botão não aparece (tag `<script>`)** — confira se a linha está **antes de `</body>`** e se a URL está completa, com `@2.3.0`.
 - **O botão não aparece (npm)** — pelo npm é preciso chamar `init()` ou renderizar `<AccessAbilityWidget />`.
 - **Erro no Next.js / SSR** — use `@thaynabds/accessability-widget/react`; o módulo já tem `'use client'` e não faz nada no servidor.
-- **Atualizei, mas continua a versão antiga** — use sempre a URL com versão (`@2.2.0`). Com `@latest` o jsDelivr pode demorar até 7 dias para atualizar o cache.
+- **Atualizei, mas continua a versão antiga** — use sempre a URL com versão (`@2.3.0`). Com `@latest` o jsDelivr pode demorar até 7 dias para atualizar o cache.
 
 ---
 
@@ -246,7 +256,7 @@ w.init();                                   // coloca de volta
 - `window.A11yWidget` é o mesmo objeto (nome antigo, mantido por compatibilidade).
 - As funções podem ser chamadas a qualquer momento, inclusive antes de a página terminar de carregar.
 - Valores inválidos em `applyPrefs` são ignorados: chaves desconhecidas, tipos errados, `fontSize` fora de -2 a 4 (-2 = 80%, 4 = 140%) ou tema ou filtro de cor inexistente.
-- Preferências disponíveis: `darkMode`, `invertColors`, `highContrast`, `saturationBoost`, `theme` (`default`, `light`, `dark`, ou `high_contrast`, `kuro`, `pink_void`, `red_void`, `yellow_void`, `green_void`, `blue_void`, com sufixo `_light` para o perfil claro), `colorBlind` (`none`, `smart_invert`, `protanopia`, `deuteranopia`, `tritanopia`, `monochromia`), `fontSize`, `dyslexicFont`, `lineHeight`, `textSpacing`, `highlightLinks`, `highlightHeadings`, `hideImages`, `pauseAnimations`, `pauseVideos`, `bigCursor`, `focusVisible`, `readingGuide`.
+- Preferências disponíveis: `darkMode`, `invertColors`, `highContrast`, `saturationBoost`, `theme` (`default`, `light`, `dark`, ou `high_contrast`, `kuro`, `pink_void`, `red_void`, `yellow_void`, `green_void`, `blue_void`, com sufixo `_light` para o perfil claro), `colorBlind` (`none`, `smart_invert`, `protanopia`, `deuteranopia`, `tritanopia`, `monochromia`), `fontSize`, `dyslexicFont`, `lineHeight`, `textSpacing`, `highlightLinks`, `highlightHeadings`, `hideImages`, `pauseAnimations`, `pauseVideos`, `bigCursor`, `focusVisible`, `readingGuide`, `leftAlign`, `readableWidth`, `textMagnifier`, `showAltText`, `largeTargets`, `muteMedia`, `forceCaptions`, `ttsRate` (`0.75`, `1`, `1.25`, `1.5`).
 - Tipos TypeScript incluídos no pacote npm.
 
 </details>
@@ -310,7 +320,7 @@ python3 -m http.server 5500   # demo em http://localhost:5500/demo/
 - Testes no navegador: com o servidor acima, abra `http://localhost:5500/tests/widget.test.html` (de preferência com emulação de celular no DevTools). A página mostra `WIDGET_TESTS_OK` quando tudo passa.
 - Testes da API: `cd api && ./mvnw test`.
 - A demo é publicada no GitHub Pages a cada push na `main` (`.github/workflows/pages.yml`).
-- Nova versão: atualize `version` em `package.json`, `index.cjs` e `src/accessability-widget.js`; troque a URL `@2.2.0` no README e na demo; crie a tag (`git tag v2.2.1 && git push origin v2.2.1`) e publique com `npm publish`.
+- Nova versão: atualize `version` em `package.json`, `index.cjs` e `src/accessability-widget.js`; troque a URL `@2.3.0` no README e na demo; crie a tag (`git tag v2.3.1 && git push origin v2.3.1`) e publique com `npm publish`.
 
 </details>
 

@@ -22,6 +22,15 @@ export interface A11yPrefs {
   focusVisible: boolean;
   readingGuide: boolean;
   tts: boolean;
+  /** Velocidade da voz. */
+  ttsRate: 0.75 | 1 | 1.25 | 1.5;
+  muteMedia: boolean;
+  forceCaptions: boolean;
+  leftAlign: boolean;
+  readableWidth: boolean;
+  textMagnifier: boolean;
+  showAltText: boolean;
+  largeTargets: boolean;
 }
 
 /** Monta o widget na página (sem efeito no servidor ou se já estiver montado). */

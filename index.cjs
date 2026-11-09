@@ -30,4 +30,4 @@ exports.speak = function speak(text) { const a = api(); if (a) a.speak(text); };
 /** Chama `listener(prefs)` a cada mudança; retorna a função que cancela. */
 exports.subscribe = function subscribe(listener) { const a = api(); return a ? a.subscribe(listener) : function () {}; };
 
-exports.version = '2.2.0';
+exports.version = '2.3.0';

@@ -1,11 +1,11 @@
 /*!
  * AccessAbility Widget — Widget de Acessibilidade Universal
  * Autor: Thayná Batista da Silva — github.com/thaynabds
- * Versão: 2.2.0
+ * Versão: 2.3.0
  * Licença: MIT
  *
  * Embed (uma linha):
- * <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.2.0/src/accessability-widget.js"></script>
+ * <script src="https://cdn.jsdelivr.net/gh/thaynabds/accessability-widget@2.3.0/src/accessability-widget.js"></script>
  *
  * Conformidade: WCAG 2.2 / LBI (Lei Brasileira de Inclusão 13.146/2015)
  */
@@ -37,19 +37,27 @@
     dyslexicFont:     false,
     lineHeight:       false,
     textSpacing:      false,
+    leftAlign:        false,
+    readableWidth:    false,
+    textMagnifier:    false,
     /* Conteúdo */
     highlightLinks:   false,
     highlightHeadings:false,
     hideImages:       false,
+    showAltText:      false,
     /* Motor / movimento */
     pauseAnimations:  false,
     pauseVideos:      false,
     bigCursor:        false,
     focusVisible:     false,
+    largeTargets:     false,
     /* Leitura */
     readingGuide:     false,
     /* Áudio */
     tts:              false,     // lê texto selecionado ao pressionar o botão
+    ttsRate:          1,         // 0.75 | 1 | 1.25 | 1.5
+    muteMedia:        false,
+    forceCaptions:    false,
   };
 
   const COLOR_BLIND_MODES = ['none', 'smart_invert', 'protanopia', 'deuteranopia', 'tritanopia', 'monochromia'];
@@ -74,6 +82,16 @@
     blue_void_light:     { bg: '#eff5fd', surface: '#ffffff', text: '#12203a', accent: '#1f55a8', onAccent: '#ffffff', border: '#c8d9f2' },
   };
   const THEME_NAMES = ['default'].concat(Object.keys(THEMES));
+  const TTS_RATES = [0.75, 1, 1.25, 1.5];
+
+  // Perfis rápidos: ligam um conjunto de ajustes de uma vez.
+  const PRESETS = {
+    low_vision: { fontSize: 3, theme: 'high_contrast', bigCursor: true, focusVisible: true, showAltText: true, textMagnifier: true },
+    dyslexia:   { dyslexicFont: true, lineHeight: true, textSpacing: true, leftAlign: true, readableWidth: true },
+    attention:  { pauseAnimations: true, pauseVideos: true, muteMedia: true, readingGuide: true, highlightHeadings: true },
+    motor:      { largeTargets: true, focusVisible: true, bigCursor: true, pauseAnimations: true },
+    seizure:    { pauseAnimations: true, pauseVideos: true, muteMedia: true },
+  };
 
   // Aceita só chaves conhecidas, com o tipo certo e dentro dos limites.
   // Protege contra localStorage adulterado e contra applyPrefs com dados
@@ -86,6 +104,8 @@
       const v = raw[key];
       if (key === 'colorBlind') {
         if (COLOR_BLIND_MODES.indexOf(v) !== -1) out[key] = v;
+      } else if (key === 'ttsRate') {
+        if (TTS_RATES.indexOf(v) !== -1) out[key] = v;
       } else if (key === 'theme') {
         if (THEME_NAMES.indexOf(v) !== -1) out[key] = v;
       } else if (key === 'fontSize') {
@@ -101,6 +121,8 @@
   let speechActive = false;
   let ttsSession = null;
   let lastSelection = '';
+  let altLabels = new WeakMap();
+  const captionsShown = new WeakSet();
 
   // ─── Persistência ──────────────────────────────────────────────────────────
   function loadPrefs() {
@@ -289,6 +311,14 @@
     }
     .aw-tts-btn:hover { background: var(--aw-border); }
     .aw-tts-btn.speaking { background: #fff3cd; border-color: #d69e2e; color: #7b5c00; }
+    .aw-map { list-style: none; margin: 6px 0 0; padding: 0; max-height: 220px; overflow-y: auto; }
+    .aw-map[hidden] { display: none; }
+    .aw-map button {
+      display: block; width: 100%; padding: 7px 8px; text-align: left; cursor: pointer;
+      background: none; border: none; border-radius: 5px; color: var(--aw-text); font: inherit; font-size: 13px;
+    }
+    .aw-map button:hover, .aw-map button:focus-visible { background: var(--aw-hover); }
+    button.aw-chip { font-family: inherit; }
     .aw-tts-status { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--aw-text); }
 
     /* ── Botão reset ── */
@@ -367,12 +397,55 @@
       word-spacing: .2em !important;
     }
 
+    /* Alinhamento e largura de leitura (WCAG 1.4.8) */
+    body.aw-left-align * { text-align: left !important; }
+    body.aw-readable-width p,
+    body.aw-readable-width li,
+    body.aw-readable-width dd,
+    body.aw-readable-width blockquote { max-width: 70ch !important; }
+
+    /* Áreas de clique de no mínimo 44px (WCAG 2.5.5) */
+    body.aw-large-targets a,
+    body.aw-large-targets button,
+    body.aw-large-targets summary,
+    body.aw-large-targets select,
+    body.aw-large-targets label,
+    body.aw-large-targets [role="button"],
+    body.aw-large-targets input:not([type="hidden"]) {
+      min-height: 44px !important; min-width: 44px !important;
+    }
+    body.aw-large-targets a,
+    body.aw-large-targets summary,
+    body.aw-large-targets label {
+      display: inline-flex !important; align-items: center;
+    }
+
+    /* Descrição das imagens */
+    .aw-alt-label {
+      display: block !important; margin: 4px 0 !important; padding: 4px 8px !important;
+      font-size: 14px !important; line-height: 1.4 !important;
+      background: #fff3cd !important; color: #3d2f00 !important; border-left: 3px solid #d69e2e !important;
+    }
+
+    /* Lupa de texto */
+    #aw-mag {
+      position: fixed; z-index: var(--aw-z); display: none; pointer-events: none;
+      max-width: min(560px, calc(100vw - 16px)); padding: 12px 16px;
+      background: var(--aw-bg); color: var(--aw-text); border: 2px solid var(--aw-primary);
+      border-radius: 8px; box-shadow: 0 6px 28px var(--aw-shadow);
+      font: 600 28px/1.35 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-wrap: anywhere;
+    }
+    #aw-mag.show { display: block; }
+
     /* Pausar animações */
+    html.aw-pause-anim { scroll-behavior: auto !important; }
     body.aw-pause-anim *,
     body.aw-pause-anim *::before,
     body.aw-pause-anim *::after {
       animation-play-state: paused !important;
       transition-duration: 0ms !important;
+      scroll-behavior: auto !important;
     }
 
     /* Cursor grande */
@@ -514,6 +587,14 @@
 
         <div class="aw-body">
 
+          <!-- PERFIS RÁPIDOS -->
+          <div class="aw-section-label">Perfis rápidos</div>
+          <div class="aw-chips" id="aw-presets">
+            ${[['low_vision','Baixa visão'],['dyslexia','Dislexia'],['attention','TDAH / foco'],
+               ['motor','Motora'],['seizure','Sensível a estímulos']]
+              .map(([id, name]) => `<button type="button" class="aw-chip aw-preset" aria-pressed="false" data-preset="${id}">${name}</button>`).join('')}
+          </div>
+
           <!-- TEMAS -->
           <div class="aw-section-label">Tema</div>
           <div class="aw-chips" id="aw-chips-theme" role="radiogroup" aria-label="Tema">
@@ -566,6 +647,9 @@
           ${row('aw-dyslexic', '📖', 'Fonte dislexia (OpenDyslexic)')}
           ${row('aw-lheight',  '↕',  'Aumentar altura de linha')}
           ${row('aw-spacing',  '↔',  'Espaçamento de texto')}
+          ${row('aw-left',     '⬅',  'Alinhar texto à esquerda')}
+          ${row('aw-width',    '📐', 'Limitar largura do texto')}
+          ${row('aw-textmag',  '🔍', 'Lupa de texto')}
 
           <div class="aw-divider"></div>
 
@@ -574,6 +658,13 @@
 
           ${row('aw-links',    '🔗', 'Destacar links')}
           ${row('aw-headings', '📑', 'Destacar títulos')}
+          ${row('aw-alt',      '🏷',  'Mostrar descrição das imagens')}
+
+          <button class="aw-tts-btn" id="aw-map-btn" aria-expanded="false" aria-controls="aw-map">
+            <span aria-hidden="true">🗺</span>
+            <span>Mapa da página</span>
+          </button>
+          <ul class="aw-map" id="aw-map" hidden></ul>
 
           <div class="aw-divider"></div>
 
@@ -585,18 +676,30 @@
           ${row('aw-cursor',  '🖱',  'Cursor grande')}
           ${row('aw-focus',   '🎯', 'Destacar foco do teclado')}
           ${row('aw-guide',   '📏', 'Guia de leitura')}
+          ${row('aw-targets', '👆', 'Aumentar áreas de clique')}
 
           <div class="aw-divider"></div>
 
           <!-- ÁUDIO -->
           <div class="aw-section-label">Áudio</div>
 
+          ${row('aw-mute',     '🔇', 'Silenciar sons da página')}
+          ${row('aw-captions', '💬', 'Ativar legendas dos vídeos')}
+
+          <button class="aw-tts-btn" id="aw-page-btn" aria-label="Ler a página em voz alta">
+            <span aria-hidden="true">📄</span>
+            <span id="aw-page-label">Ler a página</span>
+          </button>
           <button class="aw-tts-btn" id="aw-tts-btn"
             aria-label="Ler texto selecionado em voz alta">
             <span aria-hidden="true">🔊</span>
             <span id="aw-tts-label">Ler texto selecionado</span>
           </button>
           <p class="aw-tts-status" id="aw-tts-status" role="status"></p>
+          <div class="aw-section-label">Velocidade da voz</div>
+          <div class="aw-chips" id="aw-chips-rate" role="radiogroup" aria-label="Velocidade da voz">
+            ${TTS_RATES.map(rate => `<span class="aw-chip" role="radio" tabindex="0" data-rate="${rate}">${String(rate).replace('.', ',')}x</span>`).join('')}
+          </div>
 
           <button id="aw-reset" aria-label="Restaurar todas as configurações padrão">
             ↺ Restaurar padrões
@@ -604,6 +707,8 @@
 
         </div>
       </div>
+
+      <div id="aw-mag" aria-hidden="true"></div>
 
       <!-- Guia de leitura -->
       <div id="${GUIDE_ID}" aria-hidden="true">
@@ -646,6 +751,9 @@
     pauseAnimations:   'aw-pause-anim',
     bigCursor:         'aw-big-cursor',
     focusVisible:      'aw-focus-visible',
+    leftAlign:         'aw-left-align',
+    readableWidth:     'aw-readable-width',
+    largeTargets:      'aw-large-targets',
   };
 
   function applyAll() {
@@ -662,8 +770,9 @@
     b.classList.toggle('aw-smart-invert', prefs.colorBlind === 'smart_invert');
     applyTheme();
     applyFilters();
+    document.documentElement.classList.toggle('aw-pause-anim', !!prefs.pauseAnimations);
     applyFontSize();
-    applyVideos();
+    applyPageContent();
     applyReadingGuide();
   }
 
@@ -761,6 +870,177 @@
     });
   }
 
+  // Som: só restaura o que o widget silenciou.
+  function applyMute() {
+    document.querySelectorAll('video, audio').forEach(media => {
+      if (prefs.muteMedia) {
+        if (!media.muted) { media.dataset.awMuted = '1'; media.muted = true; }
+      } else if (media.dataset.awMuted) {
+        delete media.dataset.awMuted;
+        media.muted = false;
+      }
+    });
+  }
+
+  // Legendas: liga a faixa no idioma da página, ou a primeira disponível.
+  function applyCaptions() {
+    const pageLang = (document.documentElement.lang || '').toLowerCase().split('-')[0];
+    document.querySelectorAll('video').forEach(video => {
+      if (!video.textTracks) return;
+      const tracks = Array.from(video.textTracks).filter(t => t.kind === 'captions' || t.kind === 'subtitles');
+      if (prefs.forceCaptions) {
+        if (!tracks.length || tracks.some(t => t.mode === 'showing')) return;
+        const track = tracks.find(t => (t.language || '').toLowerCase().split('-')[0] === pageLang) || tracks[0];
+        track.mode = 'showing';
+        captionsShown.add(track);
+      } else {
+        tracks.forEach(t => {
+          if (captionsShown.has(t)) { t.mode = 'disabled'; captionsShown.delete(t); }
+        });
+      }
+    });
+  }
+
+  // Descrição das imagens: o texto entra por textContent, nunca como HTML.
+  function applyAltText() {
+    document.querySelectorAll('img').forEach(img => {
+      const current = altLabels.get(img);
+      const alt = img.getAttribute('alt');
+      if (!prefs.showAltText || alt === '') {
+        if (current) { current.remove(); altLabels.delete(img); }
+        return;
+      }
+      const text = alt === null ? 'Imagem sem descrição' : 'Imagem: ' + alt;
+      if (current) { if (current.textContent !== text) current.textContent = text; return; }
+      const label = document.createElement('span');
+      label.className = 'aw-alt-label';
+      label.textContent = text;
+      const anchor = img.parentElement && img.parentElement.tagName === 'PICTURE' ? img.parentElement : img;
+      anchor.insertAdjacentElement('afterend', label);
+      altLabels.set(img, label);
+    });
+  }
+
+  function applyPageContent() {
+    applyVideos();
+    applyMute();
+    applyCaptions();
+    applyAltText();
+    if (!prefs.textMagnifier) hideMagnifier();
+  }
+
+  // Desfaz o que foi inserido ou alterado nos elementos da própria página.
+  function clearPageContent() {
+    document.querySelectorAll('.aw-alt-label').forEach(label => label.remove());
+    altLabels = new WeakMap();
+    document.querySelectorAll('[data-aw-muted]').forEach(media => {
+      delete media.dataset.awMuted;
+      media.muted = false;
+    });
+    document.querySelectorAll('video').forEach(video => {
+      if (!video.textTracks) return;
+      Array.from(video.textTracks).forEach(t => {
+        if (captionsShown.has(t)) { t.mode = 'disabled'; captionsShown.delete(t); }
+      });
+    });
+  }
+
+  // ─── Lupa de texto ─────────────────────────────────────────────────────────
+  // Lê só texto visível da página; nunca o valor de campos de formulário.
+  const MAG_SELECTOR = 'p, li, a, button, h1, h2, h3, h4, h5, h6, td, th, label, dt, dd, blockquote, figcaption, summary';
+
+  function hideMagnifier() {
+    const mag = document.getElementById('aw-mag');
+    if (mag) mag.classList.remove('show');
+  }
+
+  function showMagnifier(target, x, y) {
+    const mag = document.getElementById('aw-mag');
+    if (!prefs.textMagnifier || !mag || !target.closest) return;
+    const block = target.closest(MAG_SELECTOR);
+    if (!block || !document.body.contains(block)) { hideMagnifier(); return; }
+    const text = (block.innerText || block.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+    if (!text) { hideMagnifier(); return; }
+    mag.textContent = text;
+    mag.classList.add('show');
+    const box = mag.getBoundingClientRect();
+    const left = Math.max(8, Math.min(x + 16, window.innerWidth - box.width - 8));
+    const below = y + 20;
+    const top = below + box.height + 8 > window.innerHeight ? Math.max(8, y - box.height - 16) : below;
+    mag.style.left = left + 'px';
+    mag.style.top = top + 'px';
+  }
+
+  function initMagnifier() {
+    on(document, 'mouseover', e => showMagnifier(e.target, e.clientX, e.clientY));
+    on(document, 'mouseout', e => { if (!e.relatedTarget) hideMagnifier(); });
+    on(document, 'focusin', e => {
+      if (!e.target.getBoundingClientRect) return;
+      const rect = e.target.getBoundingClientRect();
+      showMagnifier(e.target, rect.left, rect.bottom);
+    });
+    on(document, 'keydown', e => { if (e.key === 'Escape') hideMagnifier(); });
+    on(window, 'scroll', hideMagnifier, { passive: true });
+  }
+
+  // ─── Mapa da página ────────────────────────────────────────────────────────
+  function goToElement(element) {
+    if (!element.hasAttribute('tabindex')) element.setAttribute('tabindex', '-1');
+    if (element.scrollIntoView) element.scrollIntoView({ block: 'start' });
+    element.focus({ preventScroll: true });
+    const panel = document.getElementById('a11y-panel');
+    panel.classList.remove('open');
+    document.getElementById('a11y-btn').setAttribute('aria-expanded', 'false');
+  }
+
+  function buildPageMap() {
+    const list = document.getElementById('aw-map');
+    list.textContent = '';
+    const add = (label, element, indent) => {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.style.paddingLeft = (8 + indent * 12) + 'px';
+      button.addEventListener('click', () => goToElement(element));
+      item.appendChild(button);
+      list.appendChild(item);
+    };
+    const main = document.querySelector('main, [role="main"]');
+    if (main) add('Ir para o conteúdo principal', main, 0);
+    document.querySelectorAll('h1, h2, h3').forEach(heading => {
+      const label = (heading.textContent || '').replace(/\s+/g, ' ').trim();
+      if (label && !heading.closest('[hidden]')) add(label.slice(0, 100), heading, Number(heading.tagName[1]) - 1);
+    });
+    if (!list.children.length) {
+      const empty = document.createElement('li');
+      empty.textContent = 'Esta página não tem títulos.';
+      list.appendChild(empty);
+    }
+  }
+
+  function togglePageMap() {
+    const button = document.getElementById('aw-map-btn');
+    const list = document.getElementById('aw-map');
+    const open = list.hidden;
+    if (open) buildPageMap();
+    list.hidden = !open;
+    button.setAttribute('aria-expanded', String(open));
+  }
+
+  // ─── Perfis rápidos ────────────────────────────────────────────────────────
+  function presetActive(id) {
+    return Object.entries(PRESETS[id]).every(([key, value]) => prefs[key] === value);
+  }
+
+  function togglePreset(id) {
+    const preset = PRESETS[id];
+    const turnOff = presetActive(id);
+    Object.keys(preset).forEach(key => { prefs[key] = turnOff ? defaults[key] : preset[key]; });
+    if (preset.theme && !turnOff) { prefs.darkMode = false; prefs.highContrast = false; }
+    savePrefs(); applyAll(); syncUI();
+  }
+
   function applyReadingGuide() {
     const guide = document.getElementById(GUIDE_ID);
     if (!guide) return;
@@ -781,6 +1061,13 @@
     'aw-cursor':   'bigCursor',
     'aw-focus':    'focusVisible',
     'aw-guide':    'readingGuide',
+    'aw-left':     'leftAlign',
+    'aw-width':    'readableWidth',
+    'aw-textmag':  'textMagnifier',
+    'aw-alt':      'showAltText',
+    'aw-targets':  'largeTargets',
+    'aw-mute':     'muteMedia',
+    'aw-captions': 'forceCaptions',
   };
 
   function syncUI() {
@@ -794,8 +1081,14 @@
 
     const active = themeParts(activeThemeName());
     const activeFilter = prefs.invertColors ? 'invert' : prefs.colorBlind;
-    document.querySelectorAll('.aw-chip').forEach(chip => {
-      const on = chip.dataset.family ? chip.dataset.family === active.family
+    document.querySelectorAll('.aw-preset').forEach(button => {
+      const on = presetActive(button.dataset.preset);
+      button.classList.toggle('active', on);
+      button.setAttribute('aria-pressed', String(on));
+    });
+    document.querySelectorAll('.aw-chip:not(.aw-preset)').forEach(chip => {
+      const on = chip.dataset.rate ? Number(chip.dataset.rate) === prefs.ttsRate
+        : chip.dataset.family ? chip.dataset.family === active.family
         : chip.dataset.profile ? chip.dataset.profile === active.profile
         : chip.dataset.cb === activeFilter;
       chip.classList.toggle('active', on);
@@ -877,6 +1170,7 @@
 
     const utter = new SpeechSynthesisUtterance(session.chunks[session.index++]);
     utter.lang = session.lang;
+    utter.rate = prefs.ttsRate;
     if (session.voice) utter.voice = session.voice;
     session.utter = utter;  // mantém a referência: o Chrome perde os eventos sem ela
 
@@ -911,13 +1205,35 @@
       setTtsStatus('Selecione um texto na página para ler em voz alta.');
       return;
     }
+    startSpeech(text, 'selection');
+  }
 
+  function pageText() {
+    const root = document.querySelector('main, [role="main"], article') || document.body;
+    if (typeof root.innerText === 'string') return root.innerText.trim();
+    const copy = root.cloneNode(true);
+    copy.querySelectorAll('script, style, noscript').forEach(node => node.remove());
+    return (copy.textContent || '').trim();
+  }
+
+  function speakPage() {
+    if (!('speechSynthesis' in window)) {
+      setTtsStatus('Seu navegador não suporta leitura em voz alta.');
+      return;
+    }
+    if (speechActive) { stopSpeech(); return; }
+    const text = pageText();
+    if (!text) { setTtsStatus('Não há texto para ler nesta página.'); return; }
+    startSpeech(text, 'page');
+  }
+
+  function startSpeech(text, source) {
     // Uma fala anterior travada bloquearia a fila inteira.
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
 
     const lang = document.documentElement.lang || 'pt-BR';
-    ttsSession = { chunks: splitForSpeech(text), index: 0, lang, voice: pickVoice(lang), utter: null, watchdog: null };
+    ttsSession = { source, chunks: splitForSpeech(text), index: 0, lang, voice: pickVoice(lang), utter: null, watchdog: null };
     speechActive = true;
     updateTtsBtn();
     setTtsStatus('');
@@ -946,8 +1262,13 @@
     const btn   = document.getElementById('aw-tts-btn');
     const label = document.getElementById('aw-tts-label');
     if (!btn) return;
-    btn.classList.toggle('speaking', speechActive);
-    if (label) label.textContent = speechActive ? 'Parar leitura' : 'Ler texto selecionado';
+    const source = ttsSession ? ttsSession.source : null;
+    const pageBtn = document.getElementById('aw-page-btn');
+    const pageLabel = document.getElementById('aw-page-label');
+    if (pageBtn) pageBtn.classList.toggle('speaking', source === 'page');
+    if (pageLabel) pageLabel.textContent = source === 'page' ? 'Parar leitura' : 'Ler a página';
+    btn.classList.toggle('speaking', source === 'selection');
+    if (label) label.textContent = source === 'selection' ? 'Parar leitura' : 'Ler texto selecionado';
   }
 
   // ─── Evento de toggle de linha ────────────────────────────────────────────
@@ -1172,9 +1493,14 @@
     });
 
     // Chips de tema e de filtro: uma escolha por grupo
-    document.querySelectorAll('.aw-chip').forEach(chip => {
+    document.querySelectorAll('.aw-preset').forEach(button => {
+      button.addEventListener('click', () => togglePreset(button.dataset.preset));
+    });
+    document.querySelectorAll('.aw-chip:not(.aw-preset)').forEach(chip => {
       chip.addEventListener('click', () => {
-        if (chip.dataset.family || chip.dataset.profile) {
+        if (chip.dataset.rate) {
+          prefs.ttsRate = Number(chip.dataset.rate);
+        } else if (chip.dataset.family || chip.dataset.profile) {
           chooseTheme(chip.dataset.family, chip.dataset.profile);
         } else {
           prefs.invertColors = chip.dataset.cb === 'invert';
@@ -1189,6 +1515,9 @@
 
     // TTS
     document.getElementById('aw-tts-btn').addEventListener('click', speakSelection);
+    document.getElementById('aw-page-btn').addEventListener('click', speakPage);
+    document.getElementById('aw-map-btn').addEventListener('click', togglePageMap);
+    initMagnifier();
     bindSelectionMemory();
 
     // Reset
@@ -1196,7 +1525,7 @@
 
     // Vídeos novos adicionados ao DOM
     if (window.MutationObserver) {
-      videoObserver = new MutationObserver(() => applyVideos());
+      videoObserver = new MutationObserver(() => applyPageContent());
       videoObserver.observe(document.body, { childList: true, subtree: true });
     }
   }
@@ -1228,7 +1557,7 @@
     initReadingGuide();
     bindKeyShortcut();
     initDraggable();
-    console.info('[AccessAbility Widget v2.2.0] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
+    console.info('[AccessAbility Widget v2.3.0] pronto. Atalho: Alt+A | Arraste o botão para reposicionar.');
   }
 
   // Remove o widget e desfaz todos os efeitos na página. As preferências
@@ -1248,6 +1577,8 @@
       document.body.style.removeProperty('filter');
     }
     clearTheme();
+    clearPageContent();
+    document.documentElement.classList.remove('aw-pause-anim');
     if (document.body) document.body.classList.remove('aw-smart-invert');
     document.documentElement.style.fontSize = '';
   }
@@ -1287,7 +1618,7 @@
 
   window.A11yWidget = {
     __core:     true,
-    version:    '2.2.0',
+    version:    '2.3.0',
     init:       () => { ensureReady(); },
     destroy:    destroy,
     isMounted:  () => !!document.getElementById(WIDGET_ID),

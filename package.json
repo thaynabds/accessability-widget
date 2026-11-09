@@ -1,7 +1,7 @@
 {
   "name": "@thaynabds/accessability-widget",
-  "version": "2.2.0",
-  "description": "Widget de acessibilidade para web com 19 recursos (WCAG 2.2 / LBI), em JavaScript puro, com componente e hook React.",
+  "version": "2.3.0",
+  "description": "Widget de acessibilidade para web com 30 recursos (WCAG 2.2 / LBI), em JavaScript puro, com componente e hook React.",
   "main": "./index.cjs",
   "module": "./index.mjs",
   "types": "./index.d.ts",
