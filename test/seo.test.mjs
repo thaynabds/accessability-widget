@@ -54,3 +54,11 @@ test('página de redirecionamento da raiz não compete com a demo', () => {
   assert.equal(root.querySelector('meta[name="robots"]').content, 'noindex, follow');
   assert.equal(root.querySelector('link[rel="canonical"]').href, DEMO);
 });
+
+test('demo não carrega imagem, vídeo, áudio ou script de terceiros (o IP do visitante fica no próprio site)', () => {
+  const own = (u) => !/^(https?:)?\/\//.test(u) || u.startsWith(BASE);
+  const srcs = [...doc.querySelectorAll('img[src], video[src], audio[src], source[src], script[src], iframe[src], link[rel="stylesheet"][href]')]
+    .map((n) => n.getAttribute('src') || n.getAttribute('href'));
+  const external = srcs.filter((u) => !own(u));
+  assert.deepEqual(external, [], 'recursos externos na demo');
+});
