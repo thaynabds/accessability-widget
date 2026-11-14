@@ -7,6 +7,7 @@ function installSpeech(win, voices = [{ lang: 'pt-BR', name: 'Voz' }]) {
   const spoken = [];
   class Utterance { constructor(text) { this.text = text; } }
   win.SpeechSynthesisUtterance = Utterance;
+  const listeners = {};
   const synth = {
     spoken,
     cancelled: 0,
@@ -14,6 +15,9 @@ function installSpeech(win, voices = [{ lang: 'pt-BR', name: 'Voz' }]) {
     cancel() { this.cancelled++; },
     resume() {},
     getVoices() { return voices; },
+    addEventListener(name, fn) { (listeners[name] ||= []).push(fn); },
+    removeEventListener(name, fn) { listeners[name] = (listeners[name] || []).filter(f => f !== fn); },
+    fire(name) { (listeners[name] || []).slice().forEach(fn => fn()); },
   };
   Object.defineProperty(win, 'speechSynthesis', { value: synth, configurable: true });
   return synth;
@@ -74,8 +78,10 @@ test('falha do motor de voz aparece no painel e devolve o botão', async () => {
   const synth = installSpeech(win, []);
   select(win, heading(win));
   $(win, 'aw-tts-btn').click();
+  synth.fire('voiceschanged');
   synth.spoken[0].onerror({ error: 'synthesis-failed' });
   assert.match($(win, 'aw-tts-status').textContent, /não tem voz disponível/);
+  assert.match($(win, 'aw-tts-status').textContent, /speech-dispatcher/);
   assert.equal($(win, 'aw-tts-label').textContent, 'Ler texto selecionado');
 });
 
@@ -88,6 +94,7 @@ test('motor de voz que nunca responde não prende o botão', async (t) => {
   t.after(() => win.close());
   select(win, heading(win));
   $(win, 'aw-tts-btn').click();
+  synth.fire('voiceschanged');
   timers.at(-1)();
   assert.match($(win, 'aw-tts-status').textContent, /não tem voz disponível/);
   assert.equal($(win, 'aw-tts-label').textContent, 'Ler texto selecionado');
@@ -132,4 +139,25 @@ test('mensagem do painel trata conteúdo selecionado como texto, sem HTML', asyn
   assert.equal(synth.spoken[0].text, '<img src=x onerror=alert(1)>');
   synth.spoken[0].onerror({ error: 'synthesis-failed' });
   assert.equal($(win, 'aw-tts-status').querySelector('img'), null);
+});
+
+test('voz que chega depois da primeira consulta é usada na leitura', async () => {
+  const win = await loadWidget();
+  const voices = [];
+  const synth = installSpeech(win, voices);
+  select(win, heading(win));
+  $(win, 'aw-tts-btn').click();
+  assert.equal(synth.spoken.length, 0);
+  voices.push({ lang: 'pt-BR', name: 'Tardia' });
+  synth.fire('voiceschanged');
+  assert.equal(synth.spoken[0].voice.name, 'Tardia');
+});
+
+test('leitura da página não inclui o próprio painel do widget', async () => {
+  const win = await loadWidget();
+  const synth = installSpeech(win);
+  $(win, 'aw-page-btn').click();
+  assert.equal(synth.spoken.length, 1);
+  assert.match(synth.spoken[0].text, /Título/);
+  assert.doesNotMatch(synth.spoken[0].text, /Central de acessibilidade|Pausar animações/);
 });

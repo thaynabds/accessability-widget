@@ -257,7 +257,7 @@
     .aw-ico { width: 20px; text-align: center; flex-shrink: 0; font-size: .95rem; }
 
     /* ── Toggle switch ── */
-    .aw-toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .aw-toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; pointer-events: none; }
     .aw-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
     .aw-toggle-track {
       position: absolute; inset: 0;
@@ -728,11 +728,11 @@
           <span class="aw-ico" aria-hidden="true">${ico}</span>
           <span>${label}</span>
         </span>
-        <label class="aw-toggle" aria-hidden="true">
+        <span class="aw-toggle" aria-hidden="true">
           <input type="checkbox" id="${id}-chk" tabindex="-1">
           <span class="aw-toggle-track"></span>
           <span class="aw-toggle-thumb"></span>
-        </label>
+        </span>
       </div>`;
   }
 
@@ -1119,7 +1119,9 @@
   // ─── Text-to-Speech ────────────────────────────────────────────────────────
   const TTS_CHUNK_MAX   = 180;   // o Chrome corta falas longas; o Android recusa textos grandes
   const TTS_START_LIMIT = 6000;  // sem motor de voz, alguns navegadores nunca respondem
+  const TTS_VOICES_WAIT = 1500;  // o Chrome carrega as vozes depois da primeira consulta
   const TTS_NO_VOICE    = 'Não foi possível ler: este navegador ou sistema não tem voz disponível. Instale uma voz ou tente outro navegador.';
+  const TTS_INSTALL_HELP = ' Linux: sudo apt install speech-dispatcher espeak-ng. Windows: Configurações, Hora e idioma, Fala. Mac: Ajustes, Acessibilidade, Conteúdo falado. Depois reinicie o navegador.';
 
   function setTtsStatus(message) {
     const status = document.getElementById('aw-tts-status');
@@ -1149,6 +1151,28 @@
     return voices.find(v => normalized(v) === wanted)
       || voices.find(v => normalized(v).split('-')[0] === base)
       || null;
+  }
+
+  // Chamada única: espera as vozes carregarem (ou o tempo esgotar) antes de falar.
+  function whenVoicesReady(callback) {
+    const synth = window.speechSynthesis;
+    if (synth.getVoices().length > 0) { callback(); return; }
+    let done = false;
+    const timer = setTimeout(finish, TTS_VOICES_WAIT);
+    function finish() {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (synth.removeEventListener) synth.removeEventListener('voiceschanged', finish);
+      callback();
+    }
+    if (synth.addEventListener) synth.addEventListener('voiceschanged', finish);
+  }
+
+  // Sem nenhuma voz instalada, a mensagem diz como instalar; com voz, diz que o motor não respondeu.
+  function speechFailureMessage() {
+    const noVoices = window.speechSynthesis.getVoices().length === 0;
+    return noVoices ? TTS_NO_VOICE + TTS_INSTALL_HELP : TTS_NO_VOICE;
   }
 
   function finishSpeech(message) {
@@ -1181,13 +1205,13 @@
       if (event.error === 'canceled' || event.error === 'interrupted') { finishSpeech(); return; }
       finishSpeech(event.error === 'not-allowed'
         ? 'O navegador bloqueou a leitura em voz alta nesta página.'
-        : TTS_NO_VOICE);
+        : speechFailureMessage());
     };
 
     clearTimeout(session.watchdog);
     session.watchdog = setTimeout(() => {
       if (session !== ttsSession) return;
-      finishSpeech(TTS_NO_VOICE);
+      finishSpeech(speechFailureMessage());
       window.speechSynthesis.cancel();
     }, TTS_START_LIMIT);
     window.speechSynthesis.speak(utter);
@@ -1208,12 +1232,22 @@
     startSpeech(text, 'selection');
   }
 
+  // Lê só o conteúdo da página: o próprio painel do widget fica de fora.
   function pageText() {
     const root = document.querySelector('main, [role="main"], article') || document.body;
-    if (typeof root.innerText === 'string') return root.innerText.trim();
-    const copy = root.cloneNode(true);
-    copy.querySelectorAll('script, style, noscript').forEach(node => node.remove());
-    return (copy.textContent || '').trim();
+    const widget = document.getElementById(WIDGET_ID);
+    const previous = widget ? widget.style.display : '';
+    if (widget) widget.style.display = 'none';
+    try {
+      if (typeof root.innerText === 'string') return root.innerText.trim();
+      const copy = root.cloneNode(true);
+      copy.querySelectorAll('script, style, noscript').forEach(node => node.remove());
+      const ownCopy = copy.querySelector('#' + WIDGET_ID);
+      if (ownCopy) ownCopy.remove();
+      return (copy.textContent || '').trim();
+    } finally {
+      if (widget) widget.style.display = previous;
+    }
   }
 
   function speakPage() {
@@ -1233,11 +1267,16 @@
     window.speechSynthesis.resume();
 
     const lang = document.documentElement.lang || 'pt-BR';
-    ttsSession = { source, chunks: splitForSpeech(text), index: 0, lang, voice: pickVoice(lang), utter: null, watchdog: null };
+    const session = { source, chunks: splitForSpeech(text), index: 0, lang, voice: null, utter: null, watchdog: null };
+    ttsSession = session;
     speechActive = true;
     updateTtsBtn();
     setTtsStatus('');
-    speakNextChunk(ttsSession);
+    whenVoicesReady(() => {
+      if (session !== ttsSession) return;
+      session.voice = pickVoice(lang);
+      speakNextChunk(session);
+    });
   }
 
   // No celular, tocar no botão ou no painel desfaz a seleção antes do clique.
