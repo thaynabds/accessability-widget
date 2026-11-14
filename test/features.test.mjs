@@ -9,7 +9,7 @@ const q = (win, sel) => win.document.querySelector(sel);
 function speech(win) {
   const spoken = [];
   win.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
-  Object.defineProperty(win, 'speechSynthesis', { configurable: true, value: { speak: u => spoken.push(u), cancel() {}, resume() {}, getVoices: () => [] } });
+  Object.defineProperty(win, 'speechSynthesis', { configurable: true, value: { speak: u => spoken.push(u), cancel() {}, resume() {}, getVoices: () => [{ lang: 'pt-BR', name: 'Voz' }], addEventListener() {}, removeEventListener() {} } });
   return spoken;
 }
 
@@ -123,6 +123,18 @@ test('ler a página usa o conteúdo principal, a velocidade escolhida e para', a
   assert.equal($(win, 'aw-tts-label').textContent, 'Ler texto selecionado');
   $(win, 'aw-page-btn').click();
   assert.equal($(win, 'aw-page-label').textContent, 'Ler a página');
+});
+
+test('interruptor da linha liga e desliga uma vez por clique', async () => {
+  const win = await loadWidget();
+  const row = $(win, 'aw-sat');
+  row.querySelector('.aw-toggle').click();
+  assert.equal(win.A11yWidget.getPrefs().saturationBoost, true);
+  assert.equal(row.getAttribute('aria-pressed'), 'true');
+  row.querySelector('.aw-toggle').click();
+  assert.equal(win.A11yWidget.getPrefs().saturationBoost, false);
+  row.querySelector('.aw-row-label').click();
+  assert.equal(win.A11yWidget.getPrefs().saturationBoost, true);
 });
 
 test('velocidade inválida é ignorada', async () => {
